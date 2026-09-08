@@ -45,8 +45,10 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 & "C:\Program Files\Side Effects Software\Houdini 21.0.729\bin\hython.exe" tools\make_template_hip.py
 & "C:\Program Files\Side Effects Software\Houdini 21.0.729\bin\hython.exe" tools\make_vellum_cloth_scene.py
 
-# サイト
-.venv\Scripts\python.exe serve.py    # http://127.0.0.1:8765/houdini-lab/
+# サイト＋プレビュー（1つ起動すれば両方見られる）
+.venv\Scripts\python.exe serve.py
+#   サイト     : http://127.0.0.1:8765/houdini-lab/
+#   プレビュー : http://127.0.0.1:8765/houdini-lab/preview/
 .venv\Scripts\python.exe build.py
 ```
 
@@ -54,11 +56,11 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 push すれば GitHub Actions が `build.py` を回して自動公開する。
 
 **プレビュー画像をユーザーに見せる方法**: `SendUserFile` はこの環境（VSCode 拡張）では表示されない。
-`tools/_cache/preview` を配信する簡易サーバーを立て、URL を伝えること。
+`Read` で画像を見られるのは自分だけで、ユーザーには見えていない。**必ずブラウザ経由で見せること。**
 
-```powershell
-.venv\Scripts\python.exe -m http.server 8766 --bind 127.0.0.1 --directory tools\_cache\preview
-```
+`serve.py` の `/houdini-lab/preview/` が `tools/_cache/preview` の画像を新しい順に並べ、
+5秒ごとに自動更新する。`preview.py` を実行したら URL を伝えるだけでよい。
+site/ とは別扱いなのでビルドの影響を受けず、撮影中でも見られる。
 
 ## Houdini 側の重要な前提
 
