@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article class="node-page">
+  <header class="page-head">
+    <p class="crumb"><a href="{{ url('nodes/') }}">ノード</a></p>
+    <h1>{{ page.title }}</h1>
+    <dl class="meta">
+      {% if page.node %}<dt>ノード</dt><dd><code>{{ page.node }}</code></dd>{% endif %}
+      {% if page.context %}<dt>コンテキスト</dt><dd>{{ page.context }}</dd>{% endif %}
+      <dt>検証バージョン</dt><dd>Houdini {{ page.houdini_version }}</dd>
+      {% if page.updated %}<dt>更新</dt><dd>{{ page.updated }}</dd>{% endif %}
+    </dl>
+    {% if page.tags %}
+    <p class="tags">
+      {% for tag in page.tags %}<a class="tag" href="{{ url('tags/' ~ tag ~ '/') }}">{{ tag }}</a>{% endfor %}
+    </p>
+    {% endif %}
+  </header>
+
+  {% if page.viewers %}
+  <nav class="toc">
+    <span class="toc-label">このページのパラメータ</span>
+    <ul>
+      {% for v in page.viewers %}
+      <li><a href="#{{ v.parm }}"><code>{{ v.parm }}</code></a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  <div class="body">
+    {{ page.html | safe }}
+  </div>
+</article>
+{% endblock %}

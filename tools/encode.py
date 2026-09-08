@@ -1,0 +1,204 @@
+"""PNG 連番（パラメータ値ごと）を1本の mp4 に連結し、メタ JSON を出力する。
+
+ビューアは currentTime = (p * frames_per_segment + t) / fps でシークして
+パラメータを切り替える。そのため各セグメントの先頭には必ずキーフレームが
+無ければならない。キーフレームが無いと currentTime 指定が直前のキーフレームに
+丸められ、「スライダーを動かすと別の値の映像が出る」という無言の破損になる。
+
+このモジュールは -force_key_frames でそれを打ち込み、さらに ffprobe で
+実際に入ったことを検証してから完了する。
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import config  # noqa: E402
+
+
+class EncodeError(RuntimeError):
+    pass
+
+
+def _run(cmd: list[str]) -> str:
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise EncodeError(
+            f"コマンドが失敗しました (exit {proc.returncode}):\n"
+            f"  {' '.join(cmd[:6])} ...\n{proc.stderr[-2000:]}"
+        )
+    return proc.stdout
+
+
+def count_frames(seg_dir: Path) -> int:
+    return len(sorted(seg_dir.glob("*.png")))
+
+
+def verify_segments(seg_dirs: list[Path]) -> int:
+    """全セグメントのフレーム数が揃っていることを確認し、その値を返す。
+
+    揃っていないと currentTime の計算が全部ずれるので、ここで止める。
+    """
+    if not seg_dirs:
+        raise EncodeError("セグメントが1つもありません")
+
+    counts = {d.name: count_frames(d) for d in seg_dirs}
+    empty = [name for name, n in counts.items() if n == 0]
+    if empty:
+        raise EncodeError(f"PNG が空のセグメントがあります: {', '.join(empty)}")
+
+    uniq = set(counts.values())
+    if len(uniq) != 1:
+        detail = "\n".join(f"    {name}: {n} frames" for name, n in counts.items())
+        raise EncodeError(
+            "セグメントごとにフレーム数が違います。全セグメントは同じ長さである\n"
+            "必要があります（ビューアのシーク計算が崩れるため）:\n" + detail
+        )
+
+    return uniq.pop()
+
+
+def encode(
+    seg_dirs: list[Path],
+    out_path: Path,
+    fps: int = config.VIDEO_FPS,
+    crf: int = config.VIDEO_CRF,
+    width: int = config.VIDEO_WIDTH,
+    height: int = config.VIDEO_HEIGHT,
+) -> int:
+    """セグメントを連結して mp4 を書き出し、frames_per_segment を返す。"""
+    frames_per_segment = verify_segments(seg_dirs)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    cmd: list[str] = [config.FFMPEG, "-y"]
+    for seg in seg_dirs:
+        first = sorted(seg.glob("*.png"))[0]
+        pattern = _glob_to_pattern(first)
+        cmd += ["-framerate", str(fps), "-start_number", _start_number(first), "-i", str(pattern)]
+
+    n = len(seg_dirs)
+    streams = "".join(f"[{i}:v]" for i in range(n))
+    # scale はセグメント間で解像度がずれていた場合の保険。通常は素通り。
+    filt = f"{streams}concat=n={n}:v=1:a=0[cat];[cat]scale={width}:{height}[out]"
+
+    cmd += [
+        "-filter_complex", filt,
+        "-map", "[out]",
+        "-c:v", "libx264",
+        "-preset", "slow",
+        "-crf", str(crf),
+        "-pix_fmt", "yuv420p",
+        # ここが本質。セグメント境界に必ずキーフレームを打つ。
+        "-force_key_frames", f"expr:eq(mod(n,{frames_per_segment}),0)",
+        "-movflags", "+faststart",
+        "-an",
+        str(out_path),
+    ]
+    _run(cmd)
+    return frames_per_segment
+
+
+def _glob_to_pattern(first_png: Path) -> Path:
+    """frame.0001.png -> frame.%04d.png"""
+    stem = first_png.stem
+    head, _, digits = stem.rpartition(".")
+    if not head or not digits.isdigit():
+        raise EncodeError(
+            f"PNG のファイル名が想定と違います: {first_png.name}\n"
+            "  'name.0001.png' の形式である必要があります"
+        )
+    return first_png.with_name(f"{head}.%0{len(digits)}d.png")
+
+
+def _start_number(first_png: Path) -> str:
+    return str(int(first_png.stem.rpartition(".")[2]))
+
+
+def keyframe_positions(video: Path) -> list[int]:
+    """キーフレームのフレーム番号を返す。"""
+    out = _run([
+        config.FFPROBE, "-v", "error",
+        "-select_streams", "v:0",
+        "-skip_frame", "nokey",
+        "-show_entries", "frame=pts_time",
+        "-of", "csv=p=0",
+        str(video),
+    ])
+    # csv=p=0 でも項目区切りのカンマが行末に残ることがある
+    return [float(line.strip().rstrip(",")) for line in out.split() if line.strip()]
+
+
+def verify_keyframes(video: Path, frames_per_segment: int, n_values: int, fps: int) -> None:
+    """各セグメント先頭にキーフレームが実在することを確認する。
+
+    ここを通さないと、ビューアは「動くが違う値を表示する」という
+    気づきにくい壊れ方をする。
+    """
+    times = keyframe_positions(video)
+    keyframes = {round(t * fps) for t in times}
+
+    expected = [p * frames_per_segment for p in range(n_values)]
+    # エンコーダのタイムスタンプ丸めを考慮して ±1 フレームを許容する
+    missing = [f for f in expected if not (keyframes & {f - 1, f, f + 1})]
+
+    if missing:
+        raise EncodeError(
+            "セグメント境界にキーフレームがありません: "
+            f"frame {missing}\n"
+            f"  実際のキーフレーム: {sorted(keyframes)}\n"
+            "  この状態ではビューアのシークが別の値にずれます。"
+        )
+
+
+def write_meta(
+    out_json: Path,
+    *,
+    video_name: str,
+    id_: str,
+    parm: str,
+    label: str,
+    values: list[float],
+    fps: int,
+    frames_per_segment: int,
+    width: int,
+    height: int,
+    default_index: int | None = None,
+    camera: str = config.DEFAULT_CAMERA,
+    node: str = "",
+) -> None:
+    meta = {
+        "id": id_,
+        "src": video_name,
+        "parm": parm,
+        "label": label,
+        "node": node,
+        "values": values,
+        "default_index": default_index,
+        "fps": fps,
+        "frames_per_segment": frames_per_segment,
+        "width": width,
+        "height": height,
+        "camera": camera,
+    }
+    out_json.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(meta, indent=2, ensure_ascii=False)
+
+    # 開発サーバーが media/ を監視して再ビルド中だと、コピーの最中に
+    # ファイルを掴まれて書き込みが弾かれることがある。数回待って再試行する。
+    for attempt in range(6):
+        try:
+            out_json.write_text(text, encoding="utf-8")
+            return
+        except PermissionError:
+            if attempt == 5:
+                raise EncodeError(
+                    f"{out_json} に書き込めません。\n"
+                    "  開発サーバー（serve.py）や他のプロセスが掴んでいる可能性があります。"
+                )
+            time.sleep(0.5)

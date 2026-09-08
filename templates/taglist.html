@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ page_title }}</h1>
+
+{% if tag %}
+<ul class="card-list">
+  {% for p in pages %}
+  <li class="card">
+    <a href="{{ url('nodes/' ~ p.slug ~ '/') }}">
+      <span class="card-title">{{ p.title }}</span>
+      {% if p.node %}<code class="card-node">{{ p.node }}</code>{% endif %}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+  {% if tags %}
+  <p class="tags">
+    {% for name, items in tags %}
+    <a class="tag" href="{{ url('tags/' ~ name ~ '/') }}">{{ name }} <span class="count">{{ items|length }}</span></a>
+    {% endfor %}
+  </p>
+  {% else %}
+  <p class="muted">まだタグがありません。</p>
+  {% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if page_title %}{{ page_title }} | {% endif %}{{ site_title }}</title>
+<meta name="description" content="{{ page_description or site_description }}">
+<link rel="stylesheet" href="{{ url('assets/site.css') }}?v={{ asset_v }}">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="{{ url() }}">{{ site_title }}</a>
+  <nav>
+    <a href="{{ url('nodes/') }}">ノード</a>
+    <a href="{{ url('tags/') }}">タグ</a>
+  </nav>
+</header>
+
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <p class="muted">記載の挙動は各ページに明記した Houdini バージョンで検証したものです。</p>
+</footer>
+
+<script src="{{ url('assets/param-compare.js') }}?v={{ asset_v }}"></script>
+{% if cf_token %}<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{ cf_token }}"}'></script>{% endif %}
+</body>
+</html>

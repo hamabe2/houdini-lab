@@ -1,0 +1,14 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# ビルド生成物（GitHub Actions 側で生成するのでコミットしない）
+site/
+
+# draft 撮影と PNG 連番の中間ファイル
+tools/_cache/
+
+# Houdini のバックアップ hip
+scenes/*.hip[0-9]*
+scenes/backup/

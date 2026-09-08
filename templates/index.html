@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+  <h1>{{ site_title }}</h1>
+  <p>{{ site_description }}</p>
+  <p class="muted">
+    公式ドキュメントは「そのパラメータが何をするか」は書いていますが、
+    「どのくらい変えるとどうなるか」は書いていません。ここはその差分を埋めます。
+  </p>
+</section>
+
+<section>
+  <h2>ノード</h2>
+  {% if pages %}
+  <ul class="card-list">
+    {% for p in pages %}
+    <li class="card">
+      <a href="{{ url('nodes/' ~ p.slug ~ '/') }}">
+        <span class="card-title">{{ p.title }}</span>
+        {% if p.node %}<code class="card-node">{{ p.node }}</code>{% endif %}
+      </a>
+      {% if p.viewers %}
+      <p class="card-parms">
+        {% for v in p.viewers %}<a href="{{ url('nodes/' ~ p.slug ~ '/') }}#{{ v.parm }}"><code>{{ v.parm }}</code></a>{% endfor %}
+      </p>
+      {% endif %}
+      <p class="muted small">Houdini {{ p.houdini_version }}{% if p.updated %} · {{ p.updated }}{% endif %}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">まだ記事がありません。</p>
+  {% endif %}
+</section>
+{% endblock %}

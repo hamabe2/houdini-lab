@@ -1,0 +1,20 @@
+{
+  "id": "vellum-cloth-bend",
+  "src": "vellum-cloth-bend.mp4",
+  "parm": "bendstiffness",
+  "label": "Bend Stiffness",
+  "node": "/obj/SUBJECT/CONSTRAINTS",
+  "values": [
+    0.0,
+    0.1,
+    1.0,
+    5.0,
+    10.0
+  ],
+  "default_index": 2,
+  "fps": 24,
+  "frames_per_segment": 48,
+  "width": 960,
+  "height": 540,
+  "camera": "CAM_main"
+}
