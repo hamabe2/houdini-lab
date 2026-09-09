@@ -290,11 +290,10 @@ def clean_viewport(viewport: hou.GeometryViewport) -> None:
 # --- 本体 -------------------------------------------------------------------
 
 
-def _run(job: dict, viewer: hou.SceneViewer) -> list[dict]:
+def _open_and_setup(job: dict, viewer: hou.SceneViewer) -> hou.GeometryViewport:
+    """シーンを開き、ビューポートを撮影できる状態にする（両モード共通）。"""
     hip = job["hip"]
-    f1, f2 = job["f1"], job["f2"]
     camera = job["camera"]
-    work = Path(job["work"])
 
     log(f"シーンを開いています: {hip}")
     hou.hipFile.load(hip, suppress_save_prompt=True, ignore_load_warnings=True)
@@ -305,17 +304,6 @@ def _run(job: dict, viewer: hou.SceneViewer) -> list[dict]:
         log("      パラメータを変えても結果が変わらない可能性があります:")
         for path in stale:
             log(f"        {path}")
-
-    parm = resolve_parm(job["node"], job["parm"])
-    log(f"対象: {job['node']} / {job['parm']}  （現在値 {parm.eval()}）")
-
-    toggle = check_enable_toggle(parm)
-    if toggle:
-        raise SystemExit(
-            f"'{toggle}' がオフのため、'{job['parm']}' を変えても効果がありません。\n"
-            f"  シーン側で {job['node']} の {toggle} を有効にしてください。\n"
-            "  （このまま撮ると全ての値で同じ映像になります）"
-        )
 
     cam = hou.node(camera)
     if cam is None:
@@ -331,7 +319,89 @@ def _run(job: dict, viewer: hou.SceneViewer) -> list[dict]:
         clean_viewport(viewport)
         log("ガイド類を消しました（--show-guides で残せます）")
 
-    hou.playbar.setFrameRange(f1, f2)
+    return viewport
+
+
+def _prepare_parm(node_path: str, parm_name: str) -> hou.Parm:
+    parm = resolve_parm(node_path, parm_name)
+    log(f"対象: {node_path} / {parm_name}  （現在値 {parm.eval()}）")
+
+    toggle = check_enable_toggle(parm)
+    if toggle:
+        raise SystemExit(
+            f"'{toggle}' がオフのため、'{parm_name}' を変えても効果がありません。\n"
+            f"  シーン側で {node_path} の {toggle} を有効にしてください。\n"
+            "  （このまま撮ると全ての値で同じ映像になります）"
+        )
+    return parm
+
+
+def _run_sheet(job: dict, viewer: hou.SceneViewer) -> list[dict]:
+    """複数の別パラメータを1枚ずつ撮る（セットアップ確認用）。
+
+    sim を全部回す前に「そもそも見た目に差が出るのか」「画角と見せ方は
+    これでいいのか」を判断するためのもの。**パラメータごとに元の値へ
+    戻す**のが肝で、戻さないと前のパラメータの影響が残り、何を見ているのか
+    分からない絵になる。
+    """
+    viewport = _open_and_setup(job, viewer)
+    frame = job["frame"]
+    work = Path(job["work"])
+
+    hou.playbar.setFrameRange(1, frame)
+    hou.playbar.setPlaybackRange(1, frame)
+
+    cells = []
+    total = sum(len(p["values"]) for p in job["probes"])
+    done = 0
+
+    for probe in job["probes"]:
+        parm = _prepare_parm(probe["node"], probe["parm"])
+        original = parm.eval()
+
+        for value in probe["values"]:
+            done += 1
+            cell = work / f"cell{done:03d}"
+            cell.mkdir(parents=True, exist_ok=True)
+            log(f"[{done}/{total}] {probe['parm']} = {value}")
+
+            parm.set(value)
+            clear_sim_caches()
+
+            settings = _build_settings(viewer, job, str(cell / "img.$F4.png"), frame, frame)
+            # 先頭に戻してから目的のフレームへ。sim を初期状態から走らせる。
+            hou.setFrame(1)
+            hou.setFrame(frame)
+            viewer.flipbook(viewport, settings, open_dialog=False)
+
+            pngs = sorted(cell.glob("*.png"))
+            if not pngs:
+                raise SystemExit(f"PNG が出ませんでした: {cell}")
+            cells.append({
+                "node": probe["node"],
+                "parm": probe["parm"],
+                "value": value,
+                "default": original,
+                "path": str(pngs[0]),
+            })
+
+        # 次のパラメータを単独で見るため、必ず元の値へ戻す
+        parm.set(original)
+        log(f"    {probe['parm']} を既定値 {original} に戻しました")
+
+    return cells
+
+
+def _run(job: dict, viewer: hou.SceneViewer) -> list[dict]:
+    if job.get("mode") == "sheet":
+        return _run_sheet(job, viewer)
+
+    f1, f2 = job["f1"], job["f2"]
+    work = Path(job["work"])
+
+    viewport = _open_and_setup(job, viewer)
+    parm = _prepare_parm(job["node"], job["parm"])
+
     hou.playbar.setPlaybackRange(f1, f2)
 
     values = job["values"]

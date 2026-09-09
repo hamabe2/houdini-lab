@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import http.server
+import json
 import socketserver
 import sys
 import threading
@@ -159,6 +160,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_preview_file(self.path[len(f"{PREFIX}/preview/"):].split("?")[0])
             return
 
+        # setup_sheet.py が出した「sim 前の確認用」一覧。
+        if self.path.split("?")[0].rstrip("/") == f"{PREFIX}/setup".rstrip("/"):
+            self.send_setup_index()
+            return
+        if self.path.startswith(f"{PREFIX}/setup/"):
+            self.send_cache_file(
+                config.CACHE_DIR / "setup",
+                self.path[len(f"{PREFIX}/setup/"):].split("?")[0],
+            )
+            return
+
         if self.path.rstrip("/") == f"{PREFIX}/__gen__".rstrip("/"):
             body = str(generation).encode()
             self.send_response(200)
@@ -278,16 +290,95 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(data)
 
     def send_preview_file(self, name: str) -> None:
+        self.send_cache_file(config.CACHE_DIR / "preview", name)
+
+    def send_cache_file(self, root: Path, name: str) -> None:
         # ディレクトリを抜けられないようファイル名だけを使う
-        safe = Path(name).name
-        path = config.CACHE_DIR / "preview" / safe
+        path = root / Path(name).name
         if not path.is_file():
-            self.send_error(404, "preview not found")
+            self.send_error(404, "not found")
             return
         data = path.read_bytes()
         ctype = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
         self.send_response(200)
         self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    # --- セットアップ一覧 ----------------------------------------------------
+
+    def send_setup_index(self) -> None:
+        """setup_sheet.py の結果を、パラメータごとに横並びで見せる。
+
+        判断してほしいのは「この見せ方でいいか」なので、値は横に並べて
+        差が読み取れる形にする。画像は RGBA のままなのでブラウザが合成する。
+        **ページの背景色を動画の合成先と同じにして、見え方を揃える。**
+        """
+        meta_path = config.CACHE_DIR / "setup" / "sheet.json"
+        if not meta_path.is_file():
+            body = (
+                '<p class="empty">まだありません。<br>'
+                "<code>python tools/setup_sheet.py --hip scenes/vellum_cloth.hip "
+                '--probe "/obj/SUBJECT/CONSTRAINTS:bendstiffness=0,1,10"</code>'
+                "<br>を実行すると、ここに出ます。</p>"
+            )
+            info = ""
+        else:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            info = (
+                f"{Path(meta['hip']).name} &middot; frame {meta['frame']} "
+                f"&middot; {meta['generated']}"
+            )
+            blocks = []
+            for g in meta["groups"]:
+                cells = "\n".join(
+                    f'<figure><img src="{PREFIX}/setup/{c["img"]}" alt="{c["value"]}">'
+                    f'<figcaption>{c["value"]}'
+                    f'{" <b>既定</b>" if c["value"] == g["default"] else ""}'
+                    f"</figcaption></figure>"
+                    for c in g["cells"]
+                )
+                blocks.append(
+                    f'<section><h2>{g["parm"]}</h2>'
+                    f'<p class="node">{g["node"]} &middot; 既定 {g["default"]}</p>'
+                    f'<div class="row">{cells}</div></section>'
+                )
+            body = "\n".join(blocks)
+
+        html = f"""<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>セットアップ確認 | Houdini Lab</title>
+<style>
+  body {{ margin:0; padding:1.5rem; background:#12141a; color:#e6e8eb;
+         font-family:system-ui,"Segoe UI","Yu Gothic UI",sans-serif; }}
+  h1 {{ font-size:1.05rem; margin:0 0 .3rem; }}
+  h2 {{ font-size:.95rem; margin:0 0 .2rem; font-family:ui-monospace,monospace; }}
+  .hint, .node {{ color:#9aa0a6; font-size:.8rem; margin:0 0 1rem; }}
+  .node {{ margin:0 0 .5rem; }}
+  a {{ color:#6ea8fe; }}
+  section {{ margin:0 0 2rem; }}
+  .row {{ display:flex; gap:.75rem; overflow-x:auto; padding-bottom:.4rem; }}
+  figure {{ margin:0; flex:0 0 auto; }}
+  /* 画像は RGBA。動画と同じ色に合成して見え方を揃える。 */
+  img {{ display:block; width:320px; border-radius:6px;
+        background:{config.VIDEO_BG.replace("0x", "#")}; border:1px solid #2a2e35; }}
+  figcaption {{ font-size:.78rem; color:#9aa0a6; margin-top:.3rem;
+                font-variant-numeric:tabular-nums; }}
+  figcaption b {{ color:#e6e8eb; font-weight:600; }}
+  code {{ background:#22262d; padding:.12em .4em; border-radius:4px; }}
+  .empty {{ color:#9aa0a6; line-height:2; }}
+</style></head><body>
+<h1>セットアップ確認</h1>
+<p class="hint">{info} &middot; <a href="{PREFIX}/">サイト</a>
+&middot; <a href="{PREFIX}/preview/">プレビュー</a></p>
+{body}
+</body></html>"""
+
+        data = html.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
