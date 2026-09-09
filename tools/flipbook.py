@@ -39,18 +39,22 @@ from sweep import check_disk_space, parse_frames, parse_values, thin_values  # n
 TOOLS_DIR = Path(__file__).resolve().parent
 HOOK_DIR = TOOLS_DIR / "flipbook_hooks"
 
-# 既定で隠す /obj のノード。
+# 既定では何も隠さない（Houdini の flipbook 既定と同じ）。
 #
-# BACKDROP / GROUND : ビューポートは背景も床のグリッドも自前で描く。この2つは
-#   それを持たない OpenGL ROP のための代用品なので、残すと実物と二重に写る。
-# LIGHT_key : ビューポートはライトを「ギズモ」として線で描き、それが対象の
-#   手前に重なる。ビューポートのガイド設定（enableGuide）では消えず、
-#   visibleObjects から外すしかない。外すとビューポートはヘッドライトに
-#   切り替わるが、template.hip がそもそも「常にカメラ方向から均一に当たる
-#   ヘッドライトの方が比較に適している」という理由で1灯しか置いていないので、
-#   狙いは変わらない（実測での差は布の領域で PSNR 45.9dB＝ごく僅か）。
-#   ライトの効きを見たい題材では --hide で外すこと。
-DEFAULT_HIDDEN = ("BACKDROP", "GROUND", "LIGHT_key")
+# かつて BACKDROP / GROUND を隠していたが、これは誤りだった。「ビューポートが
+# 背景も床も自前で描くから代用品は二重になる」と考えたが、実際には別物:
+#
+#   GROUND   : 24単位を25分割 = 1単位間隔のワイヤー
+#   参照グリッド: orthoGridSpacing = 0.2単位間隔（5倍細かい）
+#
+# GROUND を隠すと下から参照グリッドが出てきて、まるで違う絵になる。
+# BACKDROP はカメラの画角を完全に覆っていて、ライトが当たることで背景の
+# グラデーションを作っている。隠すと背景は何も描かれず真っ黒になる。
+#
+# なお LIGHT_key を表示するとビューポートがライトをギズモ（線）として描き、
+# 対象の手前に重なる。ガイド設定（enableGuide）では消えず visibleObjects から
+# 外すしかないので、邪魔なら --hide LIGHT_key を使う。
+DEFAULT_HIDDEN: tuple[str, ...] = ()
 
 
 def visible_pattern(hidden: list[str]) -> str:
@@ -169,7 +173,7 @@ def main() -> int:
     ap.add_argument("--camera", default=f"/obj/{config.DEFAULT_CAMERA}")
     ap.add_argument(
         "--hide", default=",".join(DEFAULT_HIDDEN),
-        help="隠す /obj のノード名（カンマ区切り）。空文字で何も隠さない",
+        help="隠す /obj のノード名（カンマ区切り）。既定は何も隠さない",
     )
     ap.add_argument(
         "--default-index", type=int, default=None,
