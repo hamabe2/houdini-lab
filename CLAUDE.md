@@ -71,6 +71,13 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
   消す方法はライセンス条件に反するので取らない。
 - **hython に flipbook は無い。** `hou.SceneViewer.flipbook()` はビューアを要求する。
   バッチ書き出しは OpenGL ROP を使う。
+  ただし OpenGL ROP は「ビューポートの見た目」をジオメトリで模倣している
+  （`template.hip` の `BACKDROP` / `GROUND` / `LIGHT_key` はその代用品）。
+  **ビューポートそのままを撮る方針に切り替えるなら、houdini.exe を GUI で
+  バッチ起動する経路がある**（`HOUDINI_PATH=<dir>;&` + `scripts/456.py` フック）。
+  `FlipbookSettings` の必要な API は 21.0.729 に揃っていることを確認済み
+  （`output` / `frameRange` / `useResolution` / `resolution` / `visibleObjects` /
+  `beautyPassOnly` / `initializeSimulations`）。**未実装。**
 - シミュレーションキャッシュは **`D:\houdini-cache\houdini-lab`**（リポジトリ外）。
   Public リポジトリに巨大ファイルが入る事故を構造的に防ぐため。$HLCACHE で参照できる。
 
@@ -124,3 +131,22 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
 - 公開は `/houdini-lab/` サブパス配下。**CSS/JS/動画のリンクを絶対パス `/...` で書かない。**
   `config.py` の `url()` / `media_url()` を通す。`serve.py` も同じサブパスで配信して条件を揃えている。
 - 解像度は 960x540 固定。可変にすると記事に並べたとき揃わない。
+
+## Git とアカウントの扱い
+
+リポジトリが **Public** なので、コミットに書かれた author / committer のメールは
+誰でも読める。過去に個人の Gmail アドレスが全コミットに入っていたため、
+履歴を書き換えてリポジトリを作り直した（旧アカウント名 `jun-0927` も同時に除去）。
+
+- **author には必ず noreply を使う。** `193295357+hamabe2@users.noreply.github.com`。
+  global / local の両方に設定済み。他マシンで作業するときは最初に確認する。
+- **GitHub の "Block command line pushes that expose my email" は当てにならない。**
+  この機能は**アカウントに登録済みのアドレスしか対象にしない**。未登録のアドレス
+  （個人の Gmail など）は素通しする。使い捨てのプライベートリポジトリで実際に
+  検証し、実アドレスの push が通ることを確認した。**仕様であって故障ではない。**
+- したがって防御は **ローカルの `git config user.email` 一箇所だけ**。
+  コミットのメールは GitHub のアカウント設定とは無関係に、
+  ローカルの設定がそのまま文字列として焼き込まれる。
+- 一度 push したコミットは、force push で参照を消しても **SHA を直接指定すれば
+  しばらく読める**。完全に消すにはリポジトリごと削除して作り直す
+  （今回はそうした。star / fork が無いうちなら損失はない）。
