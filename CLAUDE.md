@@ -81,8 +81,8 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
   |---|---|---|
   | 撮り方 | OpenGL ROP | ビューポートそのもの |
   | 実行 | hython（ヘッドレス） | houdini.exe（GUI ウィンドウが開く） |
-  | 背景・床 | `BACKDROP` / `GROUND` ジオメトリ | 同じ（隠さない。理由は下） |
-  | ワイヤー | `smoothwire` で出る | ビューポートの表示モードのまま |
+  | 背景・床 | **無し**（要るなら ROP 側で用意する） | ビューポートの背景と参照グリッド |
+  | ワイヤー | `smoothwire` で出る | `--shading`（既定 `SmoothWire`） |
 
   hython に flipbook は無い（`hou.SceneViewer.flipbook()` はビューアを要求する）。
   そこで `flipbook.py` は `HOUDINI_PATH=<hooks>;&` を差して houdini.exe を GUI 起動し、
@@ -120,8 +120,8 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
 | パラメータを変えても全部同じ映像 | sim キャッシュが残っている。`_hou_sweep.py` の `clear_sim_caches()` が担当。File Cache SOP が読み込みモードでも起きる |
 | スライダーを動かすと別の値が出る | セグメント境界にキーフレームが無い。`encode.py` が `ffprobe` で毎回検証している |
 | ビューアが1フレームで振動する | シーク位置の丸めで手前に落ちたとき巻き戻すと無限ループになる。`_sync()` は秒で判定し、手前のズレは吸収する |
+| 背景が真っ黒・グリッドが真っ白・エッジがガビガビ | **PNG が RGBA なのに合成せず yuv420p に落としている。** Houdini は背景を alpha=0、床グリッドを「白+alpha 16%」で書き出す。ffmpeg は alpha を捨てて RGB をそのまま使うのでこうなる。`encode.py` が `color` + `overlay` で `config.VIDEO_BG` に合成して防いでいる |
 | flipbook にライトの線が写り込む | ビューポートはライト/カメラを**ギズモとして線で描く**。`enableGuide` では消えない（実測確認済み）。`visibleObjects` から外すしかないので `--hide LIGHT_key` を使う |
-| flipbook のグリッドが妙に細かく背景が真っ黒 | `BACKDROP` / `GROUND` を隠している。あれは ROP 経路の代用品だがビューポートの参照グリッド（0.2単位）とは別物で、`GROUND` は1単位間隔。隠すと5倍細かいグリッドが露出し、画角を覆っていた `BACKDROP` が消えて背景が無くなる |
 | flipbook が終わらない | GUI がダイアログを出して止まっている。`tools/_cache/shots/<out>/flipbook.log` を見る。`--timeout` で打ち切られる |
 | JSON 書き込みで PermissionError | `serve.py` が `media/` を監視して再ビルド中に掴んでいる。撮影時はサーバーを止めるか、リトライに任せる |
 

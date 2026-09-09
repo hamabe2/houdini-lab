@@ -2,16 +2,19 @@
 
   hython tools/make_template_hip.py
 
-意図的に最小構成にしている。
+意図的に最小構成にしている。カメラ2台とライト1灯だけ。
 
-ライトは置かない。OpenGL ROP はシーンにライトが無いとカメラから照らす
-ヘッドライトを自動で使う。自前で distant light を組むと、垂れ下がった布の
-ように面の向きが大きく変わる対象では向きによって真っ黒に落ちてしまい、
-「パラメータの差」ではなく「たまたま光が当たったか」が絵を支配してしまう。
-比較が目的なら、常にカメラ方向から均一に当たるヘッドライトの方が適している。
+**床も背景も置かない。** かつては OpenGL ROP のために `GROUND`（ワイヤーの
+グリッド）と `BACKDROP`（暗い板）を置いていた。ROP はビューポートの参照
+グリッドも背景も描かないので、それをジオメトリで模倣したものだった。
+flipbook 経路（ビューポートをそのまま撮る）に移ったことで代用品は不要になり、
+むしろビューポート本来のグリッドと二重になるため外した。
 
-床や背景も置かない。要素を増やすほど破綻の原因が増え、原因の切り分けが
-難しくなる。必要になってから足す。
+要素を増やすほど破綻の原因が増え、「パラメータの差」より「たまたま壊れたか」
+が絵を支配する。必要になってから足す。
+
+**`sweep.py`（OpenGL ROP 経路）はこの変更で背景と床を失う。** あちらを使う
+なら ROP 側で用意し直すこと。
 """
 
 import sys
@@ -65,43 +68,6 @@ def build() -> None:
     key.parm("light_intensity").set(1.0)
     if key.parm("shadow_type") is not None:
         key.parm("shadow_type").set(0)  # 影なし
-
-    # --- 背景 ---------------------------------------------------------------
-    # OpenGL ROP は背景色のパラメータを持たない（bgimage しかない）ので、
-    # 暗い板を1枚置いて背景にする。既定の白背景だと明るすぎて対象が沈む。
-    backdrop = obj.createNode("geo", "BACKDROP")
-    bg_grid = backdrop.createNode("grid", "bg")
-    bg_grid.parm("sizex").set(24.0)
-    bg_grid.parm("sizey").set(14.0)
-    bg_grid.parm("orient").set(0)   # XY 平面（カメラに正対）
-    bg_grid.parm("rows").set(2)
-    bg_grid.parm("cols").set(2)
-    bg_color = backdrop.createNode("color", "bg_color")
-    bg_color.setInput(0, bg_grid)
-    bg_color.parmTuple("color").set((0.15, 0.16, 0.18))
-    bg_color.setDisplayFlag(True)
-    bg_color.setRenderFlag(True)
-    backdrop.parmTuple("t").set((0.0, 1.3, -9.0))
-
-    # --- 床のグリッド --------------------------------------------------------
-    # Houdini ビューポートの参照グリッドはビューポートの表示要素であって
-    # レンダー出力には含まれないため、同じ見た目をジオメトリで作る。
-    # surftype を Rows and Cols にすると閉じないポリゴン＝ワイヤーになる。
-    # 距離感と空間の広がりが分かり、対象がどれだけ動いたかを読み取れる。
-    ground = obj.createNode("geo", "GROUND")
-    g_grid = ground.createNode("grid", "wire")
-    g_grid.parm("sizex").set(24.0)
-    g_grid.parm("sizey").set(24.0)
-    g_grid.parm("orient").set(2)    # ZX 平面（水平）
-    g_grid.parm("rows").set(25)
-    g_grid.parm("cols").set(25)
-    g_grid.parm("type").set(0)      # Polygon
-    g_grid.parm("surftype").set(2)  # Rows and Cols → 線になる
-    g_color = ground.createNode("color", "wire_color")
-    g_color.setInput(0, g_grid)
-    g_color.parmTuple("color").set((0.42, 0.44, 0.48))
-    g_color.setDisplayFlag(True)
-    g_color.setRenderFlag(True)
 
     # --- 撮影対象を入れる場所 ------------------------------------------------
     subject = obj.createNode("geo", "SUBJECT")

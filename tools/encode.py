@@ -71,8 +71,16 @@ def encode(
     crf: int = config.VIDEO_CRF,
     width: int = config.VIDEO_WIDTH,
     height: int = config.VIDEO_HEIGHT,
+    bg: str = config.VIDEO_BG,
 ) -> int:
-    """セグメントを連結して mp4 を書き出し、frames_per_segment を返す。"""
+    """セグメントを連結して mp4 を書き出し、frames_per_segment を返す。
+
+    **PNG は RGBA なので、必ず不透明な背景に合成してから yuv420p に落とす。**
+    Houdini の flipbook はビューポートの背景を alpha=0、床のグリッドを
+    「白 + alpha 16%」のように半透明で書き出す。合成せずに変換すると ffmpeg は
+    alpha を捨てて RGB をそのまま使うため、背景は純黒、グリッドは純白になり、
+    ジオメトリのエッジもアンチエイリアスが消えてジャギーになる。
+    """
     frames_per_segment = verify_segments(seg_dirs)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -85,7 +93,14 @@ def encode(
     n = len(seg_dirs)
     streams = "".join(f"[{i}:v]" for i in range(n))
     # scale はセグメント間で解像度がずれていた場合の保険。通常は素通り。
-    filt = f"{streams}concat=n={n}:v=1:a=0[cat];[cat]scale={width}:{height}[out]"
+    # overlay は既定でストレート（非プリマルチプライ）alpha として合成する。
+    # Houdini の出力もストレートなので、そのままでよい。
+    filt = (
+        f"{streams}concat=n={n}:v=1:a=0[cat];"
+        f"[cat]scale={width}:{height}[fg];"
+        f"color=c={bg}:s={width}x{height}:r={fps}[bg];"
+        f"[bg][fg]overlay=shortest=1[out]"
+    )
 
     cmd += [
         "-filter_complex", filt,

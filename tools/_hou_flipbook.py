@@ -9,10 +9,9 @@ OpenGL ROP 経路（_hou_sweep.py）との違いは「絵の出どころ」だ�
   OpenGL ROP : ビューポートの見た目をジオメトリで模倣したものを ROP で撮る
   flipbook   : ビューポートそのものを撮る（グリッド・背景・シェーディングが実物）
 
-既定では何も隠さない。BACKDROP / GROUND を ROP 経路の代用品とみなして隠すと、
-下からビューポートの参照グリッド（0.2単位間隔）が出てきて GROUND の1単位
-グリッドとはまるで違う絵になり、背景も何も描かれず真っ黒になる。
-詳細は flipbook.py の DEFAULT_HIDDEN を見ること。
+床・背景・シェーディングはすべてビューポートのものをそのまま使う。
+ただし**何も指定しないとその機械の表示設定が出力に出る**ので、
+アンチエイリアスとシェーディングモードは setup_quality() で明示的に固定する。
 
 ## この経路特有の難しさ
 
@@ -171,7 +170,10 @@ def _build_settings(
     _apply(settings, "useResolution", True)
     _apply(settings, "resolution", (job["width"], job["height"]))
     # ハンドル・ガイド・HUD を落として、絵だけにする。
-    _apply(settings, "beautyPassOnly", True)
+    # beautyPassOnly を True にすると背景そのものが描かれず真っ黒になる
+    # （実測確認済み）。ガイド類は clean_viewport() の enableGuide で individually
+    # 落としているので、ここは False にして背景を残す。
+    _apply(settings, "beautyPassOnly", False)
     # flipbook 自身の AA。ビューポートの sceneAntialias とは別物で、
     # 受け取るのは int ではなく hou.flipbookAntialias の enum
     # （Off / Fast / Good / HighQuality / UseViewportSetting）。
@@ -206,17 +208,65 @@ _NOISY_GUIDES = (
 )
 
 
-def setup_quality(viewport: hou.GeometryViewport, aa: int) -> None:
-    """ビューポートのアンチエイリアスを明示する。
+# シェーディングモードを適用するディスプレイセット。どれに入るかは
+# ビューアがオブジェクトレベルかSOPレベルかで変わるので、全部に入れる。
+_DISPLAY_SETS = (
+    "DisplayModel", "CurrentModel", "SceneObject", "SelectedObject", "TemplateModel",
+)
+
+
+def setup_quality(
+    viewport: hou.GeometryViewport, aa: int, shading: str, scheme: str
+) -> None:
+    """アンチエイリアス・シェーディング・カラースキームを明示する。
 
     設定しないと、その場の Houdini の表示設定（デスクトップやユーザー設定）が
     そのまま出力に出る。同じコマンドを叩いても機械によって絵が変わるので、
     比較用の素材としては困る。ここで固定する。
     """
+    import os
+    if os.environ.get("HL_HDR_OFF"):
+        viewport.settings().setHdrRendering(False)
+        log("  PROBE hdrRendering = False")
+    if os.environ.get("HL_LUT_ON"):
+        viewport.settings().setUseSceneLUT(True)
+        log("  PROBE useSceneLUT = True")
+
     settings = viewport.settings()
     before = settings.sceneAntialias()
     settings.setSceneAntialias(aa)
     log(f"  scene antialias: {before} -> {settings.sceneAntialias()}")
+
+    # 背景色と床グリッドの色はカラースキームで決まる。
+    # "keep" は触らない。setColorScheme を呼ぶと背景のグラデーションが
+    # 平坦な色に潰れることがあるため、既定では手を出さない。
+    if scheme == "keep":
+        log(f"  color scheme: {settings.colorScheme()} のまま")
+    else:
+        color = getattr(hou.viewportColorScheme, scheme, None)
+        if color is None:
+            log(f"  警告: hou.viewportColorScheme.{scheme} がありません（既定のまま）")
+        else:
+            log(f"  color scheme: {settings.colorScheme()} -> {scheme}")
+            settings.setColorScheme(color)
+
+    # smoothwire はスムースシェーディング + ワイヤーフレーム。面だけだと変形が
+    # 読み取りにくいが、トポロジが見えると点がどう動いているかが分かる。
+    mode = getattr(hou.glShadingType, shading, None)
+    if mode is None:
+        log(f"  警告: hou.glShadingType.{shading} がありません（既定のまま）")
+        return
+    applied = []
+    for name in _DISPLAY_SETS:
+        kind = getattr(hou.displaySetType, name, None)
+        if kind is None:
+            continue
+        try:
+            settings.displaySet(kind).setShadedMode(mode)
+            applied.append(name)
+        except hou.Error as exc:
+            log(f"  警告: {name} に {shading} を適用できません: {exc}")
+    log(f"  shading: {shading} -> {', '.join(applied) or '(適用先なし)'}")
 
 
 def clean_viewport(viewport: hou.GeometryViewport) -> None:
@@ -270,7 +320,7 @@ def _run(job: dict, viewer: hou.SceneViewer) -> list[dict]:
     viewport.setCamera(cam)
     log(f"ビューポートのカメラ: {camera}")
 
-    setup_quality(viewport, job["aa"])
+    setup_quality(viewport, job["aa"], job["shading"], job["scheme"])
 
     if job.get("clean", True):
         clean_viewport(viewport)

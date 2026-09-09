@@ -41,15 +41,8 @@ HOOK_DIR = TOOLS_DIR / "flipbook_hooks"
 
 # 既定では何も隠さない（Houdini の flipbook 既定と同じ）。
 #
-# かつて BACKDROP / GROUND を隠していたが、これは誤りだった。「ビューポートが
-# 背景も床も自前で描くから代用品は二重になる」と考えたが、実際には別物:
-#
-#   GROUND   : 24単位を25分割 = 1単位間隔のワイヤー
-#   参照グリッド: orthoGridSpacing = 0.2単位間隔（5倍細かい）
-#
-# GROUND を隠すと下から参照グリッドが出てきて、まるで違う絵になる。
-# BACKDROP はカメラの画角を完全に覆っていて、ライトが当たることで背景の
-# グラデーションを作っている。隠すと背景は何も描かれず真っ黒になる。
+# 床と背景はビューポートが自前で描く。ただしそれらは **alpha 付き** で
+# 書き出されるので、encode.py が config.VIDEO_BG に合成しないと絵が壊れる。
 #
 # なお LIGHT_key を表示するとビューポートがライトをギズモ（線）として描き、
 # 対象の手前に重なる。ガイド設定（enableGuide）では消えず visibleObjects から
@@ -184,6 +177,16 @@ def main() -> int:
         help="アンチエイリアスのサンプル数（既定 8）",
     )
     ap.add_argument(
+        "--shading", default="SmoothWire",
+        choices=("SmoothWire", "Smooth", "FlatWire", "Flat", "Wire"),
+        help="ビューポートのシェーディングモード（既定 SmoothWire）",
+    )
+    ap.add_argument(
+        "--scheme", default="keep",
+        choices=("keep", "Grey", "DarkGrey", "Dark", "Light"),
+        help="ビューポートのカラースキーム＝背景と床の色（既定 keep = 触らない）",
+    )
+    ap.add_argument(
         "--show-guides", action="store_true",
         help="拘束線などのガイド表示を消さない（既定は消す）",
     )
@@ -238,6 +241,8 @@ def main() -> int:
             "visible": visible_pattern(hidden),
             "clean": not args.show_guides,
             "aa": args.aa,
+            "shading": args.shading,
+            "scheme": args.scheme,
             "work": str(work),
             "result": str(work / "result.json"),
             "log": str(work / "flipbook.log"),

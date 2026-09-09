@@ -51,6 +51,15 @@ VIDEO_HEIGHT = 540
 VIDEO_FPS = 24
 VIDEO_CRF = 21
 
+# 連番 PNG を合成する背景色。
+#
+# **これを飛ばすと絵が壊れる。** Houdini の flipbook は RGBA で書き出し、
+# ビューポートの背景を alpha=0、床のグリッドを「白 + alpha 16%」のように
+# 半透明で置く。合成せずに yuv420p へ落とすと ffmpeg は alpha を捨てて RGB を
+# そのまま使うため、背景は純黒、グリッドは純白、ジオメトリのエッジは
+# アンチエイリアスが消えてジャギーになる。
+VIDEO_BG = os.environ.get("HOUDINI_LAB_VIDEO_BG", "0x3c4147")
+
 # draft 撮影（--draft）。解像度・フレーム数・段階数をすべて落として
 # 「振っても見た目が変わらないパラメータ」を本番前に切り捨てるためのもの。
 DRAFT_WIDTH = 480
