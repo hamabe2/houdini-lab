@@ -9,6 +9,8 @@ site/
 # draft 撮影と PNG 連番の中間ファイル
 tools/_cache/
 
-# Houdini のバックアップ hip
+# Houdini のバックアップ（vellum_cloth.hip1 / vellum_cloth.hipnc1 など）。
+# シーン本体の .hip / .hipnc は追跡する。
 scenes/*.hip[0-9]*
+scenes/*.hipnc[0-9]*
 scenes/backup/
