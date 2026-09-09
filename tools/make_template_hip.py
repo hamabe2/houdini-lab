@@ -69,6 +69,12 @@ def build() -> None:
     if key.parm("shadow_type") is not None:
         key.parm("shadow_type").set(0)  # 影なし
 
+    # display フラグを落とす。ビューポートはライトを「ギズモ」として線で描き、
+    # それが撮影対象の手前に重なる。display を切ると **ギズモだけが消えて
+    # 照明は残る。** visibleObjects から外す方法もあるが、あちらは光そのものが
+    # 消えてヘッドライトに切り替わってしまう。
+    key.setDisplayFlag(False)
+
     # --- 撮影対象を入れる場所 ------------------------------------------------
     subject = obj.createNode("geo", "SUBJECT")
     subject.createNode("null", "OUT")
