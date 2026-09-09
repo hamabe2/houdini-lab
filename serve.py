@@ -43,6 +43,64 @@ RELOAD_JS = """
 generation = 0
 lock = threading.Lock()
 
+# Range を付けずに全体を返してよいファイル。HTML はリロード用スクリプトを
+# 差し込んで長さが変わるので、部分応答の対象にしない。
+_NO_RANGE_SUFFIXES = (".html",)
+
+
+class RangeReader:
+    """指定バイト数で止まる読み出しラッパー。
+
+    do_GET は send_head が返したファイルを EOF まで copyfile する。部分応答
+    ではそれだと範囲外まで送ってしまうので、残りバイト数で頭打ちにする。
+    """
+
+    def __init__(self, fh, length: int):
+        self._fh = fh
+        self._left = length
+
+    def read(self, size: int = -1) -> bytes:
+        if self._left <= 0:
+            return b""
+        if size is None or size < 0:
+            size = self._left
+        data = self._fh.read(min(size, self._left))
+        self._left -= len(data)
+        return data
+
+    def close(self) -> None:
+        self._fh.close()
+
+
+def parse_range(header: str, size: int) -> tuple[int, int] | None:
+    """'bytes=START-END' を (start, end) に変換する。end は含む。
+
+    範囲が不正・複数指定・ファイル外なら None を返し、呼び出し側は
+    通常の 200 応答にフォールバックする。
+    """
+    if not header or not header.strip().lower().startswith("bytes="):
+        return None
+    spec = header.split("=", 1)[1].strip()
+    if "," in spec:  # 複数範囲は使わないので対応しない
+        return None
+
+    start_s, _, end_s = spec.partition("-")
+    try:
+        if not start_s:                      # bytes=-500 → 末尾 500 バイト
+            length = int(end_s)
+            if length <= 0:
+                return None
+            start, end = max(0, size - length), size - 1
+        else:
+            start = int(start_s)
+            end = int(end_s) if end_s else size - 1
+    except ValueError:
+        return None
+
+    if start < 0 or start >= size or end < start:
+        return None
+    return start, min(end, size - 1)
+
 
 def snapshot() -> dict[str, float]:
     stamps: dict[str, float] = {}
@@ -85,6 +143,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # 開発中は CSS/JS が古いまま残ると原因の切り分けが難しくなるので
         # すべてキャッシュさせない
         self.send_header("Cache-Control", "no-store, must-revalidate")
+        # シーク可能であることを明示する。ブラウザはこれが無いと動画を
+        # 「先頭から流すだけ」のリソースとして扱う。
+        self.send_header("Accept-Ranges", "bytes")
         super().end_headers()
 
     def do_GET(self):
@@ -120,6 +181,39 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if PREFIX and path.startswith(PREFIX):
             path = path[len(PREFIX):] or "/"
         return super().translate_path(path)
+
+    # --- 部分応答 -----------------------------------------------------------
+
+    def send_partial(self, p: Path):
+        """Range リクエストに 206 で応じる。対象外なら None を返す。
+
+        **これが無いと動画のシークが壊れる。** SimpleHTTPRequestHandler は
+        Range を無視して 200 で全体を返すため、ブラウザは「シークできない
+        リソース」と判断する。すると動画は先頭からしか再生できず、
+        比較ビューアは最初のセグメント（p=0）以外が動かなくなる。
+        しかも本番の GitHub Pages は Range に対応しているので、
+        **ローカルでだけ再現する**という一番たちの悪い出方をする。
+        """
+        if not p.is_file() or p.suffix.lower() in _NO_RANGE_SUFFIXES:
+            return None
+
+        size = p.stat().st_size
+        rng = parse_range(self.headers.get("Range", ""), size)
+        if rng is None:
+            # Range 無し。シーク可能であることだけ伝えて通常応答に任せる。
+            return None
+
+        start, end = rng
+        length = end - start + 1
+        fh = open(p, "rb")
+        fh.seek(start)
+
+        self.send_response(206)
+        self.send_header("Content-Type", self.guess_type(str(p)))
+        self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+        self.send_header("Content-Length", str(length))
+        self.end_headers()  # Accept-Ranges はここで付く
+        return RangeReader(fh, length)
 
     # --- プレビュー ---------------------------------------------------------
 
@@ -199,12 +293,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(data)
 
     def send_head(self):
-        """HTML にだけ自動リロード用スクリプトを差し込む。"""
+        """HTML にはリロード用スクリプトを差し込み、それ以外は Range に応じる。"""
         path = self.translate_path(self.path)
         p = Path(path)
         if p.is_dir():
             p = p / "index.html"
         if p.suffix != ".html" or not p.exists():
+            head = self.send_partial(p)
+            if head is not None:
+                return head
             return super().send_head()
 
         content = p.read_text(encoding="utf-8")
