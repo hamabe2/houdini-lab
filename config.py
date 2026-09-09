@@ -67,6 +67,15 @@ HOUDINI_ROOT = Path(
     )
 )
 HYTHON = HOUDINI_ROOT / "bin" / "hython.exe"
+
+# flipbook 経路（tools/flipbook.py）だけが使う GUI 版。hython には flipbook が
+# 無いため、ビューポートをそのまま撮るにはウィンドウのあるセッションが要る。
+HOUDINI_GUI = HOUDINI_ROOT / "bin" / "houdini.exe"
+
+# GUI セッションの時間切れ（分）。ダイアログが出て止まると外からは
+# 「終わらない」としか見えないので、必ず打ち切る。
+FLIPBOOK_TIMEOUT_MIN = float(os.environ.get("HOUDINI_LAB_FLIPBOOK_TIMEOUT", "60"))
+
 FFMPEG = os.environ.get("HOUDINI_LAB_FFMPEG", "ffmpeg")
 FFPROBE = os.environ.get("HOUDINI_LAB_FFPROBE", "ffprobe")
 

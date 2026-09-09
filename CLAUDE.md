@@ -38,6 +38,12 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
   --values 0,0.1,1,5,10 --frames 1-48 --out vellum-cloth-bend `
   --label "Bend Stiffness" --default-index 2 --draft
 
+# ビューポートそのままを撮る（GUI の houdini.exe が開く。触らずに待つ）
+.venv\Scripts\python.exe tools\flipbook.py --hip scenes\vellum_cloth.hip `
+  --node /obj/SUBJECT/CONSTRAINTS --parm bendstiffness `
+  --values 0,0.1,1,5,10 --frames 1-48 --out vellum-cloth-bend `
+  --label "Bend Stiffness" --default-index 2 --draft
+
 # 1フレームだけ確認（カメラやライトの調整用。sweep を回すより圧倒的に速い）
 .venv\Scripts\python.exe tools\preview.py --hip scenes\vellum_cloth.hip --frame 24 --bbox
 
@@ -69,15 +75,30 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
   使用不能と報告されており（CLOSED / not planned）、修正は公表されていない。
 - **ライセンスは Apprentice。** 全レンダー出力にウォーターマークが入る。Flipbook でも同じ。
   消す方法はライセンス条件に反するので取らない。
-- **hython に flipbook は無い。** `hou.SceneViewer.flipbook()` はビューアを要求する。
-  バッチ書き出しは OpenGL ROP を使う。
-  ただし OpenGL ROP は「ビューポートの見た目」をジオメトリで模倣している
-  （`template.hip` の `BACKDROP` / `GROUND` / `LIGHT_key` はその代用品）。
-  **ビューポートそのままを撮る方針に切り替えるなら、houdini.exe を GUI で
-  バッチ起動する経路がある**（`HOUDINI_PATH=<dir>;&` + `scripts/456.py` フック）。
-  `FlipbookSettings` の必要な API は 21.0.729 に揃っていることを確認済み
-  （`output` / `frameRange` / `useResolution` / `resolution` / `visibleObjects` /
-  `beautyPassOnly` / `initializeSimulations`）。**未実装。**
+- **撮影経路は2つある。入出力は同じで、絵の作り方だけが違う。**
+
+  | | `sweep.py` | `flipbook.py` |
+  |---|---|---|
+  | 撮り方 | OpenGL ROP | ビューポートそのもの |
+  | 実行 | hython（ヘッドレス） | houdini.exe（GUI ウィンドウが開く） |
+  | 背景・床 | `BACKDROP` / `GROUND` ジオメトリで模倣 | ビューポートが自前で描く実物 |
+  | ワイヤー | `smoothwire` で出る | ビューポートの表示モードのまま |
+
+  hython に flipbook は無い（`hou.SceneViewer.flipbook()` はビューアを要求する）。
+  そこで `flipbook.py` は `HOUDINI_PATH=<hooks>;&` を差して houdini.exe を GUI 起動し、
+  `tools/flipbook_hooks/scripts/456.py` フックからセッションの中に入り込む。
+  撮影中はウィンドウが自動操作される。**触らずに待つこと。**
+
+  この経路特有の注意:
+  - **houdini.exe の stdout は親に届かない**（GUI サブシステムのアプリ）。進捗は
+    `tools/_cache/shots/<out>/flipbook.log` に書き、`flipbook.py` がそれを読んで表示する。
+  - **終了コードは当てにならない。** 成否は `result.json` の有無と中身で判断する。
+    GUI がダイアログを出して固まると外からは「終わらない」としか見えないので、
+    `--timeout`（既定60分）で必ず打ち切る。
+  - **`456.py` は hip を読むたびに走る**（起動直後の空シーンでも）。再入防止は
+    `_hou_flipbook.STARTED`。456.py 自体は毎回 exec され直すのでフラグを置けない。
+  - パラメータ解決と sim キャッシュ破棄は `_hou_common.py` に共通化してある。
+    **片方の経路にしか入っていないと、そちらだけで「全部同じ映像」が再発する。**
 - シミュレーションキャッシュは **`D:\houdini-cache\houdini-lab`**（リポジトリ外）。
   Public リポジトリに巨大ファイルが入る事故を構造的に防ぐため。$HLCACHE で参照できる。
 
@@ -93,6 +114,8 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
 | パラメータを変えても全部同じ映像 | sim キャッシュが残っている。`_hou_sweep.py` の `clear_sim_caches()` が担当。File Cache SOP が読み込みモードでも起きる |
 | スライダーを動かすと別の値が出る | セグメント境界にキーフレームが無い。`encode.py` が `ffprobe` で毎回検証している |
 | ビューアが1フレームで振動する | シーク位置の丸めで手前に落ちたとき巻き戻すと無限ループになる。`_sync()` は秒で判定し、手前のズレは吸収する |
+| flipbook にライトの線が写り込む | ビューポートはライト/カメラを**ギズモとして線で描く**。`enableGuide` では消えない（実測確認済み）。`visibleObjects` から外すしかないので `flipbook.py` の `DEFAULT_HIDDEN` が担当する |
+| flipbook が終わらない | GUI がダイアログを出して止まっている。`tools/_cache/shots/<out>/flipbook.log` を見る。`--timeout` で打ち切られる |
 | JSON 書き込みで PermissionError | `serve.py` が `media/` を監視して再ビルド中に掴んでいる。撮影時はサーバーを止めるか、リトライに任せる |
 
 ## 比較コンテンツの作り方
