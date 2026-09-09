@@ -170,6 +170,13 @@ def _build_settings(
     _apply(settings, "resolution", (job["width"], job["height"]))
     # ハンドル・ガイド・HUD を落として、絵だけにする。
     _apply(settings, "beautyPassOnly", True)
+    # flipbook 自身の AA。ビューポートの sceneAntialias とは別物で、
+    # 受け取るのは int ではなく hou.flipbookAntialias の enum
+    # （Off / Fast / Good / HighQuality / UseViewportSetting）。
+    # 撮影は1回きりなので常に最高品質でよい。速度を落としたければ
+    # --aa でビューポート側のサンプル数を下げる。
+    log(f"  flipbook antialias: {settings.antialias()} -> HighQuality")
+    _apply(settings, "antialias", hou.flipbookAntialias.HighQuality)
     _apply(settings, "visibleObjects", job["visible"])
     # sim を毎回先頭から作り直させる。clear_sim_caches() と二重の保険。
     _apply(settings, "initializeSimulations", True)
@@ -195,6 +202,19 @@ _NOISY_GUIDES = (
     "OriginGnomon", "FloatingGnomon", "ParticleGnomon", "ViewPivot",
     "SafeArea", "CameraMask", "ShowDrawTime",
 )
+
+
+def setup_quality(viewport: hou.GeometryViewport, aa: int) -> None:
+    """ビューポートのアンチエイリアスを明示する。
+
+    設定しないと、その場の Houdini の表示設定（デスクトップやユーザー設定）が
+    そのまま出力に出る。同じコマンドを叩いても機械によって絵が変わるので、
+    比較用の素材としては困る。ここで固定する。
+    """
+    settings = viewport.settings()
+    before = settings.sceneAntialias()
+    settings.setSceneAntialias(aa)
+    log(f"  scene antialias: {before} -> {settings.sceneAntialias()}")
 
 
 def clean_viewport(viewport: hou.GeometryViewport) -> None:
@@ -247,6 +267,8 @@ def _run(job: dict, viewer: hou.SceneViewer) -> list[dict]:
     viewport = viewer.curViewport()
     viewport.setCamera(cam)
     log(f"ビューポートのカメラ: {camera}")
+
+    setup_quality(viewport, job["aa"])
 
     if job.get("clean", True):
         clean_viewport(viewport)

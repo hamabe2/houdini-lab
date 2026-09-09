@@ -176,6 +176,10 @@ def main() -> int:
         help="Houdini の既定値が何番目か（0 始まり）。ビューアの初期位置になる",
     )
     ap.add_argument(
+        "--aa", type=int, default=8, choices=(1, 2, 4, 8, 16, 32),
+        help="アンチエイリアスのサンプル数（既定 8）",
+    )
+    ap.add_argument(
         "--show-guides", action="store_true",
         help="拘束線などのガイド表示を消さない（既定は消す）",
     )
@@ -229,6 +233,7 @@ def main() -> int:
             "camera": args.camera,
             "visible": visible_pattern(hidden),
             "clean": not args.show_guides,
+            "aa": args.aa,
             "work": str(work),
             "result": str(work / "result.json"),
             "log": str(work / "flipbook.log"),
