@@ -182,9 +182,9 @@ def main() -> int:
         help="ビューポートのシェーディングモード（既定 SmoothWire）",
     )
     ap.add_argument(
-        "--scheme", default="keep",
+        "--scheme", default="Light",
         choices=("keep", "Grey", "DarkGrey", "Dark", "Light"),
-        help="ビューポートのカラースキーム＝背景と床の色（既定 keep = 触らない）",
+        help="床グリッドの色と濃さ（既定 Light。背景色は VIDEO_BG が決める）",
     )
     ap.add_argument(
         "--show-guides", action="store_true",

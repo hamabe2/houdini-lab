@@ -237,9 +237,14 @@ def setup_quality(
     settings.setSceneAntialias(aa)
     log(f"  scene antialias: {before} -> {settings.sceneAntialias()}")
 
-    # 背景色と床グリッドの色はカラースキームで決まる。
-    # "keep" は触らない。setColorScheme を呼ぶと背景のグラデーションが
-    # 平坦な色に潰れることがあるため、既定では手を出さない。
+    # カラースキームが決めるのは **床グリッドの色と濃さ** で、背景色ではない。
+    # ビューポートの背景は alpha=0 で書き出されるため出力に届かず、背景色は
+    # encode.py が合成する config.VIDEO_BG だけで決まる。実測:
+    #
+    #   Dark  -> グリッド RGB(197,238,255) alpha 25（青みがかって淡い）
+    #   Light -> グリッド RGB(255,255,255) alpha 40（純白で濃い）
+    #
+    # 固定しないと機械ごとにグリッドの濃さが変わる。"keep" は触らない。
     if scheme == "keep":
         log(f"  color scheme: {settings.colorScheme()} のまま")
     else:
