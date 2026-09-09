@@ -48,6 +48,13 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
   --values 0,0.1,1,5,10 --frames 1-48 --out vellum-cloth-bend `
   --label "Bend Stiffness" --default-index 2 --draft
 
+# sim 前に候補を篩にかける（別の効果を持つ複数パラメータを1枚ずつ）
+.venv\Scripts\python.exe tools\setup_sheet.py --hip scenes\vellum_cloth.hip `
+  --frame 24 --camera /obj/CAM_angle `
+  --probe "/obj/SUBJECT/CONSTRAINTS:bendstiffness=0,1,10" `
+  --probe "/obj/SUBJECT/SOLVER:substeps=1,3,10"
+#   確認 : http://127.0.0.1:8765/houdini-lab/setup/
+
 # 1フレームだけ確認（カメラやライトの調整用。sweep を回すより圧倒的に速い）
 .venv\Scripts\python.exe tools\preview.py --hip scenes\vellum_cloth.hip --frame 24 --bbox
 
@@ -63,6 +70,10 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 ```
 
 記事に `:::compare <id>` と書くとビューアが埋め込まれ、アンカーは JSON の `parm` から自動生成される。
+
+**このサイトの主役は比較動画。説明は補足の数行に留める。**散文で解説を書かない。
+箇条書きと表で、動画を見るときの着眼点と固定値だけを示す。
+一般的な Houdini の落とし穴は記事ではなくこの CLAUDE.md に書く。
 push すれば GitHub Actions が `build.py` を回して自動公開する。
 
 **プレビュー画像をユーザーに見せる方法**: `SendUserFile` はこの環境（VSCode 拡張）では表示されない。
@@ -91,7 +102,9 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
   hython に flipbook は無い（`hou.SceneViewer.flipbook()` はビューアを要求する）。
   そこで `flipbook.py` は `HOUDINI_PATH=<hooks>;&` を差して houdini.exe を GUI 起動し、
   `tools/flipbook_hooks/scripts/456.py` フックからセッションの中に入り込む。
-  撮影中はウィンドウが自動操作される。**触らずに待つこと。**
+
+  **ウィンドウは親から `ShowWindow(SW_MINIMIZE)` を投げて引っ込める**
+  （`--show-window` で表示のまま）。詳細と副作用は下の「GUI ウィンドウの扱い」。
 
   この経路特有の注意:
   - **houdini.exe の stdout は親に届かない**（GUI サブシステムのアプリ）。進捗は
@@ -120,6 +133,43 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
     **片方の経路にしか入っていないと、そちらだけで「全部同じ映像」が再発する。**
 - シミュレーションキャッシュは **`D:\houdini-cache\houdini-lab`**（リポジトリ外）。
   Public リポジトリに巨大ファイルが入る事故を構造的に防ぐため。$HLCACHE で参照できる。
+
+## GUI ウィンドウの扱い（flipbook 経路）
+
+**`STARTUPINFO.wShowWindow` では最小化できない。** あれは親からのヒントに
+過ぎず、Houdini は自前で `ShowWindow` を呼ぶので無視される。実測で
+`IsIconic=False` のまま前面に出ることを確認した。**親から明示的に
+`ShowWindow(SW_MINIMIZE)` を投げるしかない**（`flipbook.py` の
+`minimize_windows()`）。ウィンドウは起動から数秒遅れて出るので待ちループから
+毎周回試す。Houdini は自分を別プロセスとして起動し直すため、Popen の PID では
+なく `houdini.exe` の名前で拾う。
+
+- **起動から1秒弱はウィンドウが出る。**ウィンドウ生成前には最小化できない
+- **最小化すると床の参照グリッドが粗くなる。** Houdini の参照グリッドは
+  実際のビューポートのピクセルサイズに応じて分割数を変えるため。実測:
+
+  | 領域 | 最小化あり / なしの差 |
+  |---|---|
+  | 背景 | inf dB（完全一致） |
+  | 布 | 36.6 dB（ほぼ同じ） |
+  | 床グリッド | **29.4 dB（明確に違う）** |
+
+**検証時の注意**: RGBA の PNG を PSNR で比べると、**透明部分の RGB も比較に
+入って数字が壊れる**（同じ絵でも 15dB などになる）。必ず `VIDEO_BG` に合成して
+から比べること。
+
+### 未決: 参照グリッドをどうするか（次のセッションで決める）
+
+現状は「出力がウィンドウの状態に依存する」状態で、これまで潰してきた環境依存が
+1つ残っている。**既に公開済みの `vellum-cloth-bend.mp4` はウィンドウ表示のまま
+撮っており、以後の撮影と床グリッドの密度が食い違う。**選択肢:
+
+1. 最小化のまま進める（現状）。密度がウィンドウ状態に依存する
+2. `--show-window` を既定に戻す。画面に出るが挙動は安定
+3. **参照グリッドを切り、床を `GROUND` ジオメトリで置き直す**（推奨）。
+   グリッドがシーンの一部になるのでウィンドウ状態に一切依存しなくなる。
+   かつて `GROUND` を消したのはアルファ不具合を隠していたからで、
+   床そのものを否定したわけではない
 
 ## 絵の作り方（flipbook の RGBA）
 
@@ -188,6 +238,36 @@ Light -> グリッド RGB(255,255,255) alpha 40   （純白で濃い）
 | 動画の最初のフレームで止まって再生されない（p=0 だけ動く） | **ローカルの `serve.py` が HTTP Range に応えていない。** `SimpleHTTPRequestHandler` は Range を無視して 200 で全体を返し、ブラウザはシーク不可と判断する。**GitHub Pages は Range に対応しているのでローカルでしか再現しない。**`serve.py` の `send_partial()` が担当 |
 
 ## 比較コンテンツの作り方
+
+**進め方**: **sim を全部回す前に `setup_sheet.py` で候補を篩にかけ、ユーザーに
+見せて判断を仰ぐ。**本撮り（5段階 x 48フレーム）を回し切ってから「差が出ない」
+「画角が悪い」と分かるのは時間の無駄。**一度に大量の画像を作らない**
+（3パラメータ x 3値くらいずつ）。
+
+```powershell
+.venv\Scripts\python.exe tools\setup_sheet.py --hip scenes\vellum_cloth.hip `
+  --frame 24 --camera /obj/CAM_angle `
+  --probe "/obj/SUBJECT/CONSTRAINTS:bendstiffness=0,1,10" `
+  --probe "/obj/SUBJECT/SOLVER:substeps=1,3,10"
+#   http://127.0.0.1:8765/houdini-lab/setup/
+```
+
+ここでいう「複数パラメータ」は**別の効果を持つパラメータ**（bendstiffness と
+substeps など）。同じパラメータの段階を並べるのは `flipbook.py` の仕事。
+パラメータごとに元の値へ戻すので、既定値のセルは全グループで同一画像になる
+（＝混ざっていないことの検算になる）。
+
+**カメラは題材の動く向きで選ぶ。** 布は面に垂直な Z 方向へ振れるので、
+正対の `CAM_main` だと揺れが奥行き方向の動きになり、折れているのか手前に
+来ているのかが読み取れない。**斜め 40 度の `CAM_angle` を使う。**
+カメラの向きは `r` ではなく `lookatpath`（`/obj/AIM`）で決めている。
+斜めだと必要な回転が回転順の解釈に依存し、手計算した角度では対象が
+画面の端に寄ってしまうため。
+
+**測って落とした例**: `stretchstiffness` を 0.001〜1 で振っても既定との差が
+58〜69dB しかなく、視覚差分が出ないので不採用にした。隣の
+`stretchstiffnessexp = 10` で**実効値が「値 x 10^10」**になっているのが原因。
+`niter`（5〜100 で 24〜32dB）と `veldamping`（0〜2 で 28〜31dB）は採用見込み。
 
 **選定基準**（上から順に効く）
 

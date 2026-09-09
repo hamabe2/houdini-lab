@@ -113,6 +113,10 @@ def main() -> int:
     )
     ap.add_argument("--hide", default=",".join(DEFAULT_HIDDEN))
     ap.add_argument("--show-guides", action="store_true")
+    ap.add_argument(
+        "--show-window", action="store_true",
+        help="Houdini のウィンドウを表示する（既定は最小化。デバッグ用）",
+    )
     ap.add_argument("--timeout", type=float, default=config.FLIPBOOK_TIMEOUT_MIN)
     args = ap.parse_args()
 
@@ -155,6 +159,7 @@ def main() -> int:
         job_path=work / "job.json",
         log_path=work / "setup.log",
         timeout_s=args.timeout * 60,
+        show_window=args.show_window,
     )
     print(f"撮影に {(time.time() - started) / 60:.1f} 分かかりました")
 

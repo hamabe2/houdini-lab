@@ -55,7 +55,70 @@ def visible_pattern(hidden: list[str]) -> str:
     return " ".join(["*"] + [f"^{name}" for name in hidden if name])
 
 
-def launch(job: dict, job_path: Path, log_path: Path, timeout_s: float) -> dict:
+# --- ウィンドウを引っ込める ---------------------------------------------------
+#
+# flipbook にはビューアが要るので GUI 起動そのものは避けられない。しかし画面を
+# 占有してフォーカスを奪う必要はない。
+#
+# **STARTUPINFO.wShowWindow では最小化できない。** あれは「こう表示してほしい」
+# という親からのヒントに過ぎず、Houdini は自前で ShowWindow を呼ぶので無視される
+# （実測: IsIconic=False のまま前面に出る）。親から明示的に ShowWindow を
+# 投げるしかない。ウィンドウが出るまで数秒かかるので、待ちループから繰り返す。
+
+
+def houdini_pids() -> set[int]:
+    """今動いている houdini.exe の PID。
+
+    Houdini は起動時に自分を別プロセスとして起動し直すことがあり、
+    Popen が掴んでいる PID とウィンドウの持ち主が一致しない。名前で拾う。
+    """
+    out = subprocess.run(
+        ["tasklist", "/FI", "IMAGENAME eq houdini.exe", "/FO", "CSV", "/NH"],
+        capture_output=True, text=True,
+    )
+    pids = set()
+    for line in out.stdout.splitlines():
+        parts = [p.strip().strip('"') for p in line.split('","')]
+        if len(parts) > 1:
+            try:
+                pids.add(int(parts[1].strip('"')))
+            except ValueError:
+                pass
+    return pids
+
+
+def minimize_windows(pids: set[int]) -> int:
+    """指定 PID のトップレベルウィンドウを最小化し、その数を返す。"""
+    if sys.platform != "win32" or not pids:
+        return 0
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    SW_MINIMIZE = 6
+    count = 0
+
+    @ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+    def visit(hwnd, _):
+        nonlocal count
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value in pids and user32.IsWindowVisible(hwnd) and not user32.IsIconic(hwnd):
+            user32.ShowWindow(hwnd, SW_MINIMIZE)
+            count += 1
+        return True
+
+    user32.EnumWindows(visit, 0)
+    return count
+
+
+def launch(
+    job: dict,
+    job_path: Path,
+    log_path: Path,
+    timeout_s: float,
+    show_window: bool = False,
+) -> dict:
     """GUI の houdini.exe を起動し、result.json が出るまで待つ。
 
     GUI アプリの終了コードは当てにならないので、判定は result.json で行う。
@@ -83,8 +146,11 @@ def launch(job: dict, job_path: Path, log_path: Path, timeout_s: float) -> dict:
     env["HLCACHE"] = str(config.CACHE_ROOT)
     config.CACHE_ROOT.mkdir(parents=True, exist_ok=True)
 
-    print(f"houdini.exe を起動します（$HLCACHE = {config.CACHE_ROOT}）")
-    print("  Houdini のウィンドウが開きます。終わるまで触らないでください。")
+    # 起動前の PID を控えておく。ここに無い houdini.exe が今回の分。
+    before = set() if show_window else houdini_pids()
+
+    where = "" if show_window else "（ウィンドウは最小化します）"
+    print(f"houdini.exe を起動します{where}（$HLCACHE = {config.CACHE_ROOT}）")
 
     # hip は渡さない。フック側で ignore_load_warnings 付きで開く。
     # コマンドラインで開かせると、警告ダイアログが出た時点で誰も操作できず
@@ -92,7 +158,7 @@ def launch(job: dict, job_path: Path, log_path: Path, timeout_s: float) -> dict:
     proc = subprocess.Popen([str(config.HOUDINI_GUI)], env=env)
 
     try:
-        _wait(proc, result_path, log_path, timeout_s)
+        _wait(proc, result_path, log_path, timeout_s, None if show_window else before)
     finally:
         if proc.poll() is None:
             proc.terminate()
@@ -106,14 +172,30 @@ def launch(job: dict, job_path: Path, log_path: Path, timeout_s: float) -> dict:
     return result
 
 
-def _wait(proc: subprocess.Popen, result_path: Path, log_path: Path, timeout_s: float) -> None:
-    """result.json が出るまで待ちつつ、ログの新着行を流す。"""
+def _wait(
+    proc: subprocess.Popen,
+    result_path: Path,
+    log_path: Path,
+    timeout_s: float,
+    pids_before: set[int] | None = None,
+) -> None:
+    """result.json が出るまで待ちつつ、ログの新着行を流す。
+
+    pids_before を渡すと、今回起動した houdini.exe のウィンドウを見つけ次第
+    最小化する。ウィンドウは起動から数秒遅れて出るので毎周回試す。
+    """
     deadline = time.time() + timeout_s
     shown = 0
     exited_at = None
+    tucked = 0
 
     while True:
         shown = _drain_log(log_path, shown)
+
+        if pids_before is not None:
+            new_pids = houdini_pids() - pids_before
+            if new_pids:
+                tucked += minimize_windows(new_pids)
 
         if result_path.exists():
             _drain_log(log_path, shown)
@@ -190,6 +272,10 @@ def main() -> int:
         "--show-guides", action="store_true",
         help="拘束線などのガイド表示を消さない（既定は消す）",
     )
+    ap.add_argument(
+        "--show-window", action="store_true",
+        help="Houdini のウィンドウを表示する（既定は最小化。デバッグ用）",
+    )
     ap.add_argument("--draft", action="store_true", help="低解像度で試し撮りする")
     ap.add_argument("--keep-frames", action="store_true", help="PNG 連番を消さない")
     ap.add_argument(
@@ -250,6 +336,7 @@ def main() -> int:
         job_path=work / "job.json",
         log_path=work / "flipbook.log",
         timeout_s=args.timeout * 60,
+        show_window=args.show_window,
     )
     print(f"撮影に {(time.time() - started) / 60:.1f} 分かかりました")
 

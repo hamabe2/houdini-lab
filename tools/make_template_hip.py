@@ -56,6 +56,30 @@ def build() -> None:
     wide.parm("focal").set(50)
     wide.parm("aperture").set(41.4214)
 
+    # 斜め 40 度から見る 3/4 視点。
+    #
+    # **面に垂直な方向へ動く題材はこちらで撮る。** 布を正対で撮ると、揺れが
+    # 奥行き方向の動きになってしまい、折れているのか手前に来ているのかが
+    # 読み取れない。40 度振ると Z 方向の動きが横移動として見えるようになり、
+    # 振れ幅と折れ方の両方が分かる。床が広く写るのも奥行きの手がかりになる。
+    #
+    #   x = 7 * sin(40) = 4.50 / z = 7 * cos(40) = 5.36（距離は CAM_main と同じ）
+    #
+    # **向きは r ではなく lookatpath で決める。** 斜めから狙うと必要な回転が
+    # 回転順の解釈に依存し、手計算した角度では対象が画面の端に寄ってしまう。
+    # 注視点のノードを置いて向かせれば、そこは考えなくてよくなる。
+    aim = obj.createNode("null", "AIM")
+    aim.parmTuple("t").set((0.0, 1.3, 0.0))
+    aim.setDisplayFlag(False)  # ギズモを写さない
+
+    angle = obj.createNode("cam", "CAM_angle")
+    angle.parmTuple("t").set((4.50, 1.9, 5.36))
+    angle.parm("lookatpath").set(aim.path())
+    angle.parm("resx").set(WIDTH)
+    angle.parm("resy").set(HEIGHT)
+    angle.parm("focal").set(50)
+    angle.parm("aperture").set(41.4214)
+
     # --- ライト -------------------------------------------------------------
     # 1灯だけ。distant light は位置を持たず r の向きだけで決まり、
     # r=(0,0,0) がカメラと同じ -Z 方向、つまり真正面から照らす状態。
