@@ -20,6 +20,16 @@ def report_framing(camera: str, frame: int) -> None:
     if cam is None or subject is None:
         return
 
+    # **この計算は軸に正対したカメラしか想定していない。**（t からの距離と
+    # r の pitch で視野を出している。）lookatpath で向きを決めるカメラでは
+    # r が 0 のままなので、答えは意味のない数字になる。黙って出すと
+    # 「はみ出している」と誤読させるので、計算せずに知らせる。
+    lookat = cam.parm("lookatpath")
+    if lookat is not None and lookat.evalAsString().strip():
+        print(f"  画角判定は省略します（{camera} は lookatpath で向きを決めています）")
+        print("    この計算は正対カメラ専用です。実際の絵で確認してください。")
+        return
+
     hou.setFrame(frame)
 
     bbox = None

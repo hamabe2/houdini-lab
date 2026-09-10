@@ -119,6 +119,58 @@ def encode(
     return frames_per_segment
 
 
+def composite_still(
+    src: Path,
+    dst: Path,
+    width: int = config.VIDEO_WIDTH,
+    height: int = config.VIDEO_HEIGHT,
+    bg: str = config.VIDEO_BG,
+) -> None:
+    """RGBA の PNG 1枚を不透明な背景に合成する。
+
+    **確認用の1枚にも合成が要る。** flipbook の PNG は背景が alpha=0、
+    床のグリッドが半透明で、そのままブラウザに出すとページの地の色が
+    透けて本番の mp4 と違う絵になる。判断材料としては使えない。
+    """
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    _run([
+        config.FFMPEG, "-y", "-i", str(src),
+        "-filter_complex",
+        f"color=c={bg}:s={width}x{height}[bg];[bg][0:v]overlay=shortest=1",
+        "-frames:v", "1",
+        str(dst),
+    ])
+
+
+def psnr(a: Path, b: Path) -> float:
+    """2枚の画像の PSNR を dB で返す。同一なら inf。
+
+    **必ず合成済みの画像を渡すこと。** flipbook の PNG は RGBA で、背景の
+    alpha=0 の部分にも RGB が入っている。生のまま比べるとその見えない画素まで
+    計算に入り、同じ絵でも 15dB のような数字になる（実測）。
+
+    「振っても差が出ないパラメータ」を主観ではなく数値で落とすための物差し。
+    """
+    out = subprocess.run(
+        [
+            config.FFMPEG, "-hide_banner",
+            "-i", str(a), "-i", str(b),
+            "-filter_complex", "psnr", "-f", "null", "-",
+        ],
+        capture_output=True, text=True,
+    )
+    # psnr フィルタは stderr に "PSNR y:.. u:.. v:.. average:.. min:.. max:.." を出す
+    for line in reversed(out.stderr.splitlines()):
+        if "average:" in line:
+            for token in line.split():
+                if token.startswith("average:"):
+                    value = token.split(":", 1)[1]
+                    return float("inf") if value == "inf" else float(value)
+    raise EncodeError(
+        f"PSNR を取得できませんでした: {a.name} vs {b.name}\n{out.stderr[-800:]}"
+    )
+
+
 def _glob_to_pattern(first_png: Path) -> Path:
     """frame.0001.png -> frame.%04d.png"""
     stem = first_png.stem
@@ -186,7 +238,12 @@ def write_meta(
     default_index: int | None = None,
     camera: str = config.DEFAULT_CAMERA,
     node: str = "",
+    raw_values: list[float] | None = None,
+    multiplier: dict | None = None,
 ) -> None:
+    # `values` はサイトに表記する値＝実効値。Houdini の入力欄に入れた値とは
+    # 別物になることがある（隣の「× 10^N」メニューが掛かるため）。
+    # 何を入れたのかは raw_values / multiplier に残す。
     meta = {
         "id": id_,
         "src": video_name,
@@ -194,6 +251,8 @@ def write_meta(
         "label": label,
         "node": node,
         "values": values,
+        "raw_values": raw_values if raw_values != values else None,
+        "multiplier": multiplier or None,
         "default_index": default_index,
         "fps": fps,
         "frames_per_segment": frames_per_segment,

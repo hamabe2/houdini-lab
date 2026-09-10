@@ -182,6 +182,13 @@ def main() -> int:
     verify_keyframes(video, frames_per_segment, len(values), fps)
     print(f"キーフレーム検証: OK ({frames_per_segment} frames/segment)")
 
+    # サイトに出すのは Houdini の入力欄の値ではなく、隣の「× 10^N」を
+    # 掛けた後の実効値。Houdini 側が計算して返してくる。
+    display = result.get("display_values") or values
+    multiplier = result.get("multiplier") or None
+    if multiplier:
+        print(f"表記は実効値: {display}  （{multiplier['source']}）")
+
     camera_name = args.camera.rsplit("/", 1)[-1]
     write_meta(
         out_dir / f"{args.out}.json",
@@ -189,7 +196,9 @@ def main() -> int:
         id_=args.out,
         parm=args.parm,
         label=args.label or args.parm,
-        values=values,
+        values=display,
+        raw_values=values,
+        multiplier=multiplier,
         fps=fps,
         frames_per_segment=frames_per_segment,
         width=width,

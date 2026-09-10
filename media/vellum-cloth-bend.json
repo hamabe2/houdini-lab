@@ -6,11 +6,22 @@
   "node": "/obj/SUBJECT/CONSTRAINTS",
   "values": [
     0.0,
+    0.01,
+    0.1,
+    0.5,
+    1.0
+  ],
+  "raw_values": [
+    0.0,
     0.1,
     1.0,
     5.0,
     10.0
   ],
+  "multiplier": {
+    "multiplier": 0.1,
+    "source": "bendstiffnessexp = -1"
+  },
   "default_index": 2,
   "fps": 24,
   "frames_per_segment": 48,

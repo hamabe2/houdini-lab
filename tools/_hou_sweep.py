@@ -21,9 +21,10 @@ import hou
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _hou_common import (  # noqa: E402
-    check_enable_toggle,
+    check_disabled,
     check_file_caches,
     clear_sim_caches,
+    effective_values,
     resolve_parm,
 )
 
@@ -73,11 +74,11 @@ def main() -> int:
     parm = resolve_parm(node_path, parm_name)
     log(f"対象: {node_path} / {parm_name}  （現在値 {parm.eval()}）")
 
-    toggle = check_enable_toggle(parm)
-    if toggle:
+    reason = check_disabled(parm)
+    if reason:
         raise SystemExit(
-            f"'{toggle}' がオフのため、'{parm_name}' を変えても効果がありません。\n"
-            f"  シーン側で {node_path} の {toggle} を有効にしてください。\n"
+            f"'{parm_name}' を変えても効果がありません: {reason}\n"
+            f"  シーン側で {node_path} の設定を見直してください。\n"
             "  （このまま撮ると全ての値で同じ映像になります）"
         )
 
@@ -116,8 +117,17 @@ def main() -> int:
             )
         results.append({"value": value, "dir": str(seg), "frames": n})
 
+    # 「× 10^N」メニューが隣にあるなら、サイトに出すのは掛けた後の値。
+    display, note = effective_values(parm, values)
+    if note:
+        log(f"表記は実効値にします（{note['source']}）: {display}")
+
     Path(job["result"]).write_text(
-        json.dumps({"segments": results}, indent=2), encoding="utf-8"
+        json.dumps(
+            {"segments": results, "display_values": display, "multiplier": note},
+            indent=2,
+        ),
+        encoding="utf-8",
     )
     log("撮影完了")
     return 0

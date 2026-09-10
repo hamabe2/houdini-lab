@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import config  # noqa: E402
+from encode import composite_still  # noqa: E402
 from flipbook import DEFAULT_HIDDEN, launch, visible_pattern  # noqa: E402
 from sweep import parse_values  # noqa: E402
 
@@ -66,7 +67,11 @@ def write_sheet(cells: list[dict], frame: int, hip: Path) -> Path:
     groups: dict[str, list[dict]] = {}
     for cell in cells:
         name = f"{slug(cell['parm'])}_{slug(str(cell['value']))}.png"
-        shutil.copy2(cell["path"], SHEET_DIR / name)
+        # **合成してから置く。** 生の PNG は RGBA で、透明部分にも RGB が
+        # 入っている。そのまま PSNR に掛けると見えない画素まで計算に入り、
+        # 同じ絵でも 15dB のような数字になる（実測）。ブラウザ表示でも
+        # ページの地色が透けて本番と違う絵になる。
+        composite_still(Path(cell["path"]), SHEET_DIR / name)
         cell["img"] = name
         groups.setdefault(cell["parm"], []).append(cell)
 
@@ -79,7 +84,10 @@ def write_sheet(cells: list[dict], frame: int, hip: Path) -> Path:
                 "parm": parm,
                 "node": items[0]["node"],
                 "default": items[0]["default"],
-                "cells": [{"value": c["value"], "img": c["img"]} for c in items],
+                "cells": [
+                    {"value": c["value"], "img": c["img"], "geo": c.get("geo", {})}
+                    for c in items
+                ],
             }
             for parm, items in groups.items()
         ],
@@ -110,6 +118,14 @@ def main() -> int:
     )
     ap.add_argument(
         "--scheme", default="Light", choices=("keep", "Grey", "DarkGrey", "Dark", "Light"),
+    )
+    ap.add_argument(
+        "--lighting", default="Headlight",
+        choices=("Off", "Headlight", "Normal", "HighQuality", "HighQualityWithShadows"),
+    )
+    ap.add_argument(
+        "--work-light", default="Headlight",
+        choices=("Headlight", "ThreePoint", "Domelight", "PhysicalSky"),
     )
     ap.add_argument("--hide", default=",".join(DEFAULT_HIDDEN))
     ap.add_argument("--show-guides", action="store_true")
@@ -152,6 +168,8 @@ def main() -> int:
             "aa": args.aa,
             "shading": args.shading,
             "scheme": args.scheme,
+            "lighting": args.lighting,
+            "work_light": args.work_light,
             "work": str(work),
             "result": str(work / "result.json"),
             "log": str(work / "setup.log"),
@@ -163,7 +181,7 @@ def main() -> int:
     )
     print(f"撮影に {(time.time() - started) / 60:.1f} 分かかりました")
 
-    write_sheet(result["segments"], args.frame, hip)
+    write_sheet(result["items"], args.frame, hip)
     print(f"完了: {total} 枚")
     print(f"  ブラウザで確認: {config.BASE_URL}/setup/  （serve.py を起動しておくこと）")
     print("  良さそうなパラメータだけ flipbook.py で本撮りしてください。")

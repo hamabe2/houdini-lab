@@ -37,9 +37,11 @@ import hou
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _hou_common import (  # noqa: E402
-    check_enable_toggle,
+    check_disabled,
     check_file_caches,
     clear_sim_caches,
+    effective_values,
+    geometry_report,
     resolve_parm,
 )
 
@@ -103,22 +105,28 @@ def _tick() -> None:
 
     try:
         job = json.loads(_job_path.read_text(encoding="utf-8"))
-        segments = _run(job, viewer)
-    except Exception as exc:  # noqa: BLE001 - 何が来ても result.json を残す
+        items = _run(job, viewer)
+    # **BaseException で受ける。** ここのコードは失敗を `raise SystemExit` で
+    # 伝えるが、SystemExit は Exception のサブクラスではない。`except Exception`
+    # だとすり抜けて result.json が書かれず、親からは「終わらない」としか
+    # 見えなくなる（--timeout で打ち切られるまで待たされる）。
+    except BaseException as exc:  # noqa: BLE001 - 何が来ても result.json を残す
         log(traceback.format_exc())
         _finish(error=f"{type(exc).__name__}: {exc}")
         return
 
-    _finish(segments=segments)
+    _finish(items=items)
 
 
-def _finish(segments: list[dict] | None = None, error: str = "") -> None:
+def _finish(items: list[dict] | None = None, error: str = "") -> None:
     """result.json を書いて Houdini を終了する。
 
     親はプロセスの終了コードではなく、このファイルの有無と中身で判断する。
     GUI アプリの終了コードは当てにならない。
+
+    items の中身はモードで変わる（sheet は1枚ずつのセル、通常は動画1本ぶん）。
     """
-    payload: dict = {"segments": segments or []}
+    payload: dict = {"items": items or []}
     if error:
         payload["error"] = error
         log(f"エラー: {error}")
@@ -213,6 +221,62 @@ _NOISY_GUIDES = (
 _DISPLAY_SETS = (
     "DisplayModel", "CurrentModel", "SceneObject", "SelectedObject", "TemplateModel",
 )
+
+
+def apply_look(viewport: hou.GeometryViewport, look: dict) -> None:
+    """ビューポートの照明を設定する。
+
+    **ライトが0灯のとき、モード（Headlight / Normal / HighQuality /
+    HighQualityWithShadows）は出力に一切効かない。** 実測で4モードの
+    出力がバイト単位で一致した。Houdini は 0灯なら同じヘッドライトに
+    落とすらしく、Normal を入れても読み返すと HighQuality に戻る。
+
+    絵を変えられるのはヘッドライトそのものの設定のほう:
+
+      direction  カメラ軸から振ると陰影に勾配が出る（同軸だと平板になる）
+      specular   ハイライト
+      ao         折り目や接触部が締まる
+    """
+    settings = viewport.settings()
+
+    # **work light を使うには lighting を Headlight にする必要がある。**
+    # setWorkLightType の docstring に明記されている
+    # （"Does not change the lighting mode to Headlight; this must be done
+    # separately."）。Normal / HighQuality のままだと work light は無視される。
+    work_light = look.get("work_light")
+    if work_light:
+        value = getattr(hou.viewportWorkLight, work_light, None)
+        if value is None:
+            log(f"  警告: hou.viewportWorkLight.{work_light} がありません")
+        else:
+            settings.setWorkLightType(value)
+            log(f"  work light: {settings.workLightType()}")
+
+    mode = look.get("lighting")
+    if mode:
+        value = getattr(hou.viewportLighting, mode, None)
+        if value is None:
+            log(f"  警告: hou.viewportLighting.{mode} がありません（既定のまま）")
+        else:
+            settings.setLighting(value)
+            log(f"  lighting: {mode} -> 実際は {settings.lighting()}")
+
+    direction = look.get("headlight_dir")
+    if direction:
+        settings.setHeadlightDirection(tuple(direction))
+        log(f"  headlight direction: {settings.headlightDirection()}")
+
+    if "specular" in look:
+        settings.setHeadlightSpecular(bool(look["specular"]))
+        log(f"  headlight specular: {settings.headlightSpecular()}")
+
+    if "intensity" in look:
+        settings.setHeadlightIntensity(float(look["intensity"]))
+        log(f"  headlight intensity: {settings.headlightIntensity()}")
+
+    if "ao" in look:
+        settings.setAmbientOcclusion(bool(look["ao"]))
+        log(f"  ambient occlusion: {settings.ambientOcclusion()}")
 
 
 def setup_quality(
@@ -315,6 +379,13 @@ def _open_and_setup(job: dict, viewer: hou.SceneViewer) -> hou.GeometryViewport:
 
     setup_quality(viewport, job["aa"], job["shading"], job["scheme"])
 
+    # 照明もここで固定する。シーンにライトは置いておらず、絵の明暗は
+    # ビューポートの work light だけで決まる（＝固定しないと機械ごとに変わる）。
+    apply_look(viewport, {
+        "lighting": job.get("lighting"),
+        "work_light": job.get("work_light"),
+    })
+
     if job.get("clean", True):
         clean_viewport(viewport)
         log("ガイド類を消しました（--show-guides で残せます）")
@@ -326,11 +397,11 @@ def _prepare_parm(node_path: str, parm_name: str) -> hou.Parm:
     parm = resolve_parm(node_path, parm_name)
     log(f"対象: {node_path} / {parm_name}  （現在値 {parm.eval()}）")
 
-    toggle = check_enable_toggle(parm)
-    if toggle:
+    reason = check_disabled(parm)
+    if reason:
         raise SystemExit(
-            f"'{toggle}' がオフのため、'{parm_name}' を変えても効果がありません。\n"
-            f"  シーン側で {node_path} の {toggle} を有効にしてください。\n"
+            f"'{parm_name}' を変えても効果がありません: {reason}\n"
+            f"  シーン側で {node_path} の設定を見直してください。\n"
             "  （このまま撮ると全ての値で同じ映像になります）"
         )
     return parm
@@ -377,12 +448,18 @@ def _run_sheet(job: dict, viewer: hou.SceneViewer) -> list[dict]:
             pngs = sorted(cell.glob("*.png"))
             if not pngs:
                 raise SystemExit(f"PNG が出ませんでした: {cell}")
+            # 絵と一緒に、sim が壊れていないかの数値も残す。
+            report = geometry_report(job.get("geo", "/obj/SUBJECT/OUT"))
+            if report.get("nan_P") or report.get("nan_v"):
+                log(f"    警告: NaN/inf があります {report}")
+
             cells.append({
                 "node": probe["node"],
                 "parm": probe["parm"],
                 "value": value,
                 "default": original,
                 "path": str(pngs[0]),
+                "geo": report,
             })
 
         # 次のパラメータを単独で見るため、必ず元の値へ戻す
@@ -392,24 +469,20 @@ def _run_sheet(job: dict, viewer: hou.SceneViewer) -> list[dict]:
     return cells
 
 
-def _run(job: dict, viewer: hou.SceneViewer) -> list[dict]:
-    if job.get("mode") == "sheet":
-        return _run_sheet(job, viewer)
-
+def _shoot_sweep(
+    job: dict, viewer: hou.SceneViewer, viewport: hou.GeometryViewport,
+    sweep: dict, parm: hou.Parm,
+) -> list[dict]:
+    """1本ぶん（＝動画1本ぶん）の全段階を撮る。"""
     f1, f2 = job["f1"], job["f2"]
-    work = Path(job["work"])
+    work = Path(job["work"]) / sweep["out"]
+    values = sweep["values"]
 
-    viewport = _open_and_setup(job, viewer)
-    parm = _prepare_parm(job["node"], job["parm"])
-
-    hou.playbar.setPlaybackRange(f1, f2)
-
-    values = job["values"]
     results = []
     for i, value in enumerate(values):
         seg = work / f"seg{i:03d}"
         seg.mkdir(parents=True, exist_ok=True)
-        log(f"[{i + 1}/{len(values)}] {job['parm']} = {value}")
+        log(f"[{i + 1}/{len(values)}] {sweep['parm']} = {value}")
 
         parm.set(value)
         clear_sim_caches()  # パラメータを変えたら必ず sim を作り直す
@@ -425,6 +498,104 @@ def _run(job: dict, viewer: hou.SceneViewer) -> list[dict]:
                 f"PNG が1枚も出ませんでした: {seg}\n"
                 "  カメラの向き、オブジェクトの表示フラグ、--visible を確認してください。"
             )
-        results.append({"value": value, "dir": str(seg), "frames": n})
+
+        # 最終フレームの状態を数値で残す。爆発や NaN を絵に頼らず検出する。
+        report = geometry_report(job.get("geo", "/obj/SUBJECT/OUT"))
+        if report.get("nan_P") or report.get("nan_v"):
+            log(f"    警告: NaN/inf があります {report}")
+        if report.get("speed_max"):
+            log(f"    速度 max {report['speed_max']} / p95 {report['speed_p95']}")
+
+        results.append({"value": value, "dir": str(seg), "frames": n, "geo": report})
 
     return results
+
+
+def _run_stills(job: dict, viewer: hou.SceneViewer) -> list[dict]:
+    """パラメータを触らず、指定フレームを1枚ずつ撮る（見た目の確認用）。
+
+    **確認する絵は、実際に出す絵と同じ経路で作らなければ意味がない。**
+    OpenGL ROP 経路には床のグリッドも背景も無いので、あちらで画角や
+    見え方を判断すると、本番と別物を見て決めることになる。
+    """
+    viewport = _open_and_setup(job, viewer)
+    work = Path(job["work"])
+    frames = job["frames"]
+    # 照明の候補を複数渡すと、同じフレームを各案で撮って見比べられる。
+    looks = job.get("looks") or [{}]
+
+    shots = []
+    n = 0
+    for look in looks:
+        name = look.get("name", "")
+        if look:
+            apply_look(viewport, look)
+        for frame in frames:
+            n += 1
+            cell = work / f"still{n:03d}"
+            cell.mkdir(parents=True, exist_ok=True)
+            log(f"[{n}/{len(looks) * len(frames)}] frame {frame}"
+                + (f" / look {name}" if name else ""))
+
+            settings = _build_settings(viewer, job, str(cell / "img.$F4.png"), frame, frame)
+            # 先頭から目的のフレームへ。sim を初期状態から走らせる。
+            hou.setFrame(1)
+            hou.setFrame(frame)
+            viewer.flipbook(viewport, settings, open_dialog=False)
+
+            pngs = sorted(cell.glob("*.png"))
+            if not pngs:
+                raise SystemExit(f"PNG が出ませんでした: {cell}")
+            shots.append({"frame": frame, "look": name, "path": str(pngs[0])})
+
+    return shots
+
+
+def _run(job: dict, viewer: hou.SceneViewer) -> list[dict]:
+    """全スイープを1つのセッションで撮る。
+
+    シーンを開き直さないのがこのモードの目的。動画1本ごとに Houdini を
+    起動し直すと、その都度 起動 + hip 読み込みを払うことになる。
+    """
+    mode = job.get("mode")
+    if mode == "sheet":
+        return _run_sheet(job, viewer)
+    if mode == "stills":
+        return _run_stills(job, viewer)
+
+    viewport = _open_and_setup(job, viewer)
+    sweeps = job["sweeps"]
+
+    # **1枚も撮る前に、全スイープの対象を解決しておく。** 1本目を数十分かけて
+    # 撮ってから3本目のパラメータ名の打ち間違いに気づくのは目も当てられない。
+    parms = [_prepare_parm(s["node"], s["parm"]) for s in sweeps]
+
+    hou.playbar.setPlaybackRange(job["f1"], job["f2"])
+
+    items = []
+    for i, (sweep, parm) in enumerate(zip(sweeps, parms)):
+        log(f"=== [{i + 1}/{len(sweeps)}] {sweep['out']} ===")
+        original = parm.eval()
+        try:
+            segments = _shoot_sweep(job, viewer, viewport, sweep, parm)
+        except BaseException as exc:  # noqa: BLE001 - SystemExit も拾う（_tick 参照）
+            # 1本の失敗で残りを捨てない。スイープどうしは独立している。
+            log(traceback.format_exc())
+            items.append({"out": sweep["out"], "error": f"{type(exc).__name__}: {exc}"})
+        else:
+            # 「× 10^N」メニューが隣にあるなら、サイトに出すのは掛けた後の値。
+            display, note = effective_values(parm, sweep["values"])
+            if note:
+                log(f"    表記は実効値にします（{note['source']}）: {display}")
+            items.append({
+                "out": sweep["out"],
+                "segments": segments,
+                "display_values": display,
+                "multiplier": note,
+            })
+        finally:
+            # 次のスイープを単独で見るため、必ず元の値へ戻す（_run_sheet と同じ理由）
+            parm.set(original)
+            log(f"    {sweep['parm']} を既定値 {original} に戻しました")
+
+    return items

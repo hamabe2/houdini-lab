@@ -48,6 +48,24 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
   --values 0,0.1,1,5,10 --frames 1-48 --out vellum-cloth-bend `
   --label "Bend Stiffness" --default-index 2 --draft
 
+# 複数本をまとめて撮る（Houdini の起動と hip 読み込みが1回で済む）
+.venv\Scripts\python.exe tools\flipbook.py --hip scenes\vellum_cloth.hip --frames 1-48 `
+  --sweep "/obj/SUBJECT/CONSTRAINTS:niter=5,10,25,50,100;out=vellum-cloth-niter;label=Iterations;default=1" `
+  --sweep "/obj/SUBJECT/CONSTRAINTS:veldamping=0,0.1,0.5,1,2;out=vellum-cloth-damp;label=Velocity Damping;default=0"
+
+# 振る候補を探す（内部名とUIラベルは一致しない。まずここを見る）
+.venv\Scripts\python.exe tools\list_parms.py --hip scenes\vellum_cloth.hip --tree /obj
+.venv\Scripts\python.exe tools\list_parms.py --hip scenes\vellum_cloth.hip `
+  --node /obj/SUBJECT/SOLVER --filter "iter|damp" --doc
+
+# 検証の台帳（screening.json）。何を調べ、何を落とし、なぜかを残す
+.venv\Scripts\python.exe tools\ledger.py add --hip scenes\vellum_cloth.hip --node /obj/SUBJECT/SOLVER
+.venv\Scripts\python.exe tools\ledger.py next --count 3   # 次に調べる候補
+.venv\Scripts\python.exe tools\ledger.py list --status screened
+
+# シートの結果を数値で判定する（採用可否を主観から外す）
+.venv\Scripts\python.exe tools\screen.py
+
 # sim 前に候補を篩にかける（別の効果を持つ複数パラメータを1枚ずつ）
 .venv\Scripts\python.exe tools\setup_sheet.py --hip scenes\vellum_cloth.hip `
   --frame 24 --camera /obj/CAM_angle `
@@ -83,6 +101,22 @@ push すれば GitHub Actions が `build.py` を回して自動公開する。
 5秒ごとに自動更新する。`preview.py` を実行したら URL を伝えるだけでよい。
 site/ とは別扱いなのでビルドの影響を受けず、撮影中でも見られる。
 
+## Houdini の事実はインストール先から引く
+
+**推測しない。**`$HFS` = `C:\Program Files\Side Effects Software\Houdini 21.0.729`
+
+| 知りたいこと | 場所 |
+|---|---|
+| tab メニューの "Vellum Configure Cloth" などが実際に設定する値 | `$HFS\houdini\toolbar\*.shelf`（XML）。`<tool name="geometry_vellumconfigurecloth">` の `kwargs['parms']` に全項目 |
+| ノードのパラメータの公式説明 | `$HFS\houdini\help\nodes.zip` の `sop/<型名>.txt`。`#id: <内部名>` の印。`list_parms.py --doc` が解析する |
+| 環境変数 | `$HFS\houdini\help\ref.zip` の `env.txt`（`::HOUDINI_XXX`） |
+| シーンにあるノードの現在値 | `list_parms.py --node` |
+| まだシーンに無いノード型のパラメータ | `list_parms.py --type remesh` |
+
+- **パラメータ説明は `parmTemplate().help()` には入っていない**（実測で vellumsolver は全部空）。nodes.zip を読むしかない
+- **tab メニューの項目は正式なノード型ではない。** 値が入った状態の既存ノードを作るツール定義で、`vellumconfigurecloth` というノード型は存在しない。**ユーザーはノード名の感覚で呼ぶ**ので、そう言われたら .shelf を探す。シェルフから呼ぶものはノードセットで別物
+- **Houdini の挙動の判断はユーザーに訊くのが最速。**hython で実測するより速くて確実なことが多い
+
 ## Houdini 側の重要な前提
 
 - **Houdini 21.0.729 を使う。** 22.0.429 も入っているが使わない。fxhoudinimcp は
@@ -107,8 +141,16 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
   （`--show-window` で表示のまま）。詳細と副作用は下の「GUI ウィンドウの扱い」。
 
   この経路特有の注意:
+  - **スプラッシュと「Start Here」ページは環境変数で止めている**
+    （`HOUDINI_NO_SPLASH` / `HOUDINI_NO_START_PAGE_SPLASH`、`flipbook.py` が設定）。
+    最小化したウィンドウの前に出られても操作できないため。
   - **houdini.exe の stdout は親に届かない**（GUI サブシステムのアプリ）。進捗は
     `tools/_cache/shots/<out>/flipbook.log` に書き、`flipbook.py` がそれを読んで表示する。
+    `--sweep` を複数渡したときは 1セッション = 複数本なので `shots/_batch/` に置く。
+  - **`--sweep` を複数渡すと1回の起動で複数本を撮る。** 削れるのは起動と hip 読み込みの
+    時間だけで、sim は値ごとに作り直す必要が消えないので変わらない。
+    撮る前に全スイープのパラメータを解決し（打ち間違いで数十分を捨てないため）、
+    1本が失敗しても残りは続行して、撮れた分だけ mp4 にする（終了コードは 1）。
   - **終了コードは当てにならない。** 成否は `result.json` の有無と中身で判断する。
     GUI がダイアログを出して固まると外からは「終わらない」としか見えないので、
     `--timeout`（既定60分）で必ず打ち切る。
@@ -125,7 +167,24 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
     | `flipbookAntialias` | `UseViewportSetting` | `HighQuality` |
     | シェーディング | 環境依存 | `--shading` `SmoothWire` |
     | `colorScheme` | `Light` | `--scheme` `Light` |
+    | `lighting` | `HighQuality` | `--lighting` `Headlight` |
+    | work light | 環境依存 | `--work-light` `Headlight` |
     | `resolution` | 1280x720 | 960x540（`config.py`） |
+
+  - **照明はシーンに置かず、ビューポートの work light で決める。**
+    `template.hip` の `LIGHT_key` は削除した（平板な絵にしかならなかった）。
+    種類は `hou.viewportWorkLight` の Headlight / ThreePoint / Domelight / PhysicalSky。
+    `preview.py --look` で1回の起動で見比べられる。
+  - **work light を使うには `lighting` を `Headlight` にすること。**
+    `setWorkLightType()` の docstring に明記されている
+    （"Does not change the lighting mode to Headlight; this must be done separately."）。
+    `Normal` / `HighQuality` のままだと work light は無視される。実測で
+    4モードの出力がバイト単位で一致した（`Normal` を入れても読み返すと
+    `HighQuality` に戻る）。同じ理由で `setHeadlightDirection()` /
+    `setHeadlightSpecular()` も届かない。
+  - **`setAmbientOcclusion(True)` は布を真っ黒にする**（0灯だと OpenGL が黒に落ちる）。使わない。
+  - **副作用: `sweep.py`（OpenGL ROP 経路）は真っ黒になる。** ライト0灯だから。
+    撮影は flipbook 経路に一本化している。
 
   - **`--draft` の絵で品質を判断しない。** draft は 480x270 なので床グリッドの
     線が潰れてモアレが出る。本番（960x540）とは別物に見える。
@@ -222,7 +281,7 @@ Light -> グリッド RGB(255,255,255) alpha 40   （純白で濃い）
 |---|---|
 | 点を固定したのに布が落下し続ける | `pintoanimation` はターゲット入力への追従用。その場に固定するのは **`stopped`** |
 | 固定対象の点が0個になる | `grid` の `orient` は **0=XY(垂直) / 1=YZ / 2=ZX(水平)**。0 は水平ではない |
-| `substeps` を上げても効かない | **`dosubstep` トグルがオフだと数値が無視される。** Houdini はこの構造が多い。`do<parm>` の有無を疑う |
+| パラメータを振っても効かない | **トグルがオフでグレーアウトしている。** Houdini はこの構造が多い。`_hou_common.py` の `check_disabled()` が撮影前に `isDisabled()` で見て止める。**名前から親トグルを推測しないこと**（`substeps` に対する `dosubstep` は取り違え。あれが制御するのは `substep` = Global Substeps で、vellum の `substeps` とは別々に作用する） |
 | 初速を与えても布が動かない | 面内方向に振っても stretch 拘束で伸びず動かない。**面に垂直な方向**に振る |
 | オブジェクトが真っ黒 | ライト0灯だと OpenGL は真っ黒に落とす（ヘッドライト自動化は効かない）。また薄い面を裏側から見ていないか確認 |
 | パラメータを変えても全部同じ映像 | sim キャッシュが残っている。`_hou_sweep.py` の `clear_sim_caches()` が担当。File Cache SOP が読み込みモードでも起きる |
@@ -268,6 +327,13 @@ substeps など）。同じパラメータの段階を並べるのは `flipbook.
 0.001〜1 はどれも 10^7〜10^10 に収まり、全部「伸びない布」だった。
 Houdini はこの「値 + 指数」の並びが多いので、**振る対象は指数側**にする。
 
+`list_parms.py` が `実効値 = 値 x 10^N` として一覧に出すので、選ぶ時点で気づける。
+vellumconstraints では `stretchstiffness` / `compressstiffness` / `tangentstiffness` /
+`bendstiffness` の4つがこの並び。**`bendstiffnessexp` はこのシーンで -1**
+（`constrainttype=cloth` にした結果で、`make_vellum_cloth_scene.py` は触っていない）。
+つまり公開済みの `vellum-cloth-bend.mp4` の 0,0.1,1,5,10 は
+実効 0,0.01,0.1,0.5,1 を振っていた。
+
 実測（frame 24 / `CAM_angle` / 合成後 PSNR、既定 `exp=10` との差）:
 
 | `stretchstiffnessexp` | 既定との差 | | 隣どうしの差 |
@@ -286,6 +352,52 @@ Houdini はこの「値 + 指数」の並びが多いので、**振る対象は�
 
 `niter`（5〜100 で 24〜32dB）と `veldamping`（0〜2 で 28〜31dB）も採用見込みだが
 未撮影。
+
+**採用可否は数値で決める。目視で決めない。**`screen.py` が PSNR とアトリビュートで判定する。
+
+```
+ledger.py add    ノードの全パラメータを候補として積む（既に判定済みのものは触らない）
+ledger.py next   次に調べる候補を出す
+setup_sheet.py   候補を1フレームずつ撮る
+screen.py        PSNR で判定 → screening.json に書き戻す
+flipbook.py      採用されたものだけ本撮り
+```
+
+- **差なし** = 既定値との差が 50dB 以上（＝ほぼ同じ絵）。振る価値がない
+- **採用（段階に無駄あり）** = 隣どうしが 50dB 以上。その段階は枠を捨てている
+- **破綻** = NaN/inf、または速度 p95 が中央値の20倍超
+
+**PSNR は合成後の画像で測ること。**RGBA のまま比べると透明部分の RGB まで
+計算に入り、同じ絵でも 15dB のような数字になる。`setup_sheet.py` がセルを
+`VIDEO_BG` に合成してから置いている。
+
+限界: **1フレームの比較なので、途中で破綻して最後に戻る挙動は捕まらない。**
+速度の判定もゆっくり進む破綻には効かない。閾値 50dB は実測（有効域 19〜47dB /
+頭打ち 59dB）から引いた線で、題材が変われば `--same-db` で見直す。
+
+**`isDisabled()` は「この構成に無関係なパラメータ」を落とせない**（実測で
+283件中0件しか該当せず、`adhesion` や `attachframe` も False だった）。
+`ledger.py next` は UI のタブ名で順位を下げているだけなので、無関係な候補は
+混ざる。**それでよい**設計にしてある — 外した候補は1フレーム撮るだけで
+「差なし」と記録され、二度と候補に戻らない。
+
+**候補はノードのパラメータ一覧から選ぶ。**記憶や勘で挙げない。
+`list_parms.py` が 内部名 / UI ラベル / 現在値 / 既定 / 範囲 / 公式の説明 を並べる。
+
+- **内部名と UI ラベルは一致しない。** `niter` は UI では "Constraint Iterations"。
+  UI を眺めても内部名は分からず、内部名だけ見ても何のことか分からない。
+  **記事の `label` には UI ラベルを書く**（読者が Houdini で探せる名前）
+- **組み込みノードの説明は `parmTemplate().help()` に入っていない**（実測で全部空）。
+  本文は `houdini/help/nodes.zip` の `sop/vellumsolver.txt` などにあり、
+  `#id: <内部名>` の印で引ける。`list_parms.py --doc` がそこを読む
+- 範囲の `(目安)` は強制でない範囲（UI スライダーの端）。**外の値も入れられる**ので、
+  「片端に破綻する値を入れる」ときはここを超えてよい
+
+**サイトに表記するのは実効値。**Houdini の入力欄の値ではない。
+stiffness 系は「数値の入力欄」と「× 10^N のメニュー（`<parm>exp`）」が並んでいて、
+効いているのは積のほう。入力欄が 10 で `exp` が 1 なら **表記は 100**。
+`_hou_common.py` の `effective_values()` が計算し、JSON の `values` に入る
+（入力欄の値は `raw_values`、倍率は `multiplier` に残す）。
 
 **選定基準**（上から順に効く）
 

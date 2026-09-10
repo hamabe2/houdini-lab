@@ -1,0 +1,5003 @@
+{
+  "entries": {
+    "/obj/SUBJECT/SOLVER:startframe": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "startframe",
+      "label": "Start Frame",
+      "type": "Int",
+      "folders": [],
+      "default": 1,
+      "min": 1,
+      "max": 240,
+      "help": "What frame on the Houdini playbar that the simulation should begin at.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:solvermode": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "solvermode",
+      "label": "Solver Mode",
+      "type": "Menu",
+      "folders": [
+        "Solver"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "Specifies the type of solve to perform.  __Full__ provides the full Vellum feature set.  The __Minimal__ mode has reduced functionality, is optimized for fast __Substeps__, and is particularly useful for large grain and fluid simulations. NOTE:  The Minimal mode has several limitations: - External collision geometry must be prepared with a [VDB Collider SOP|Node:sop/vdbcollider]. - Changing constr",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:timescale": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "timescale",
+      "label": "Time Scale",
+      "type": "Float",
+      "folders": [
+        "Solver"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "help": "Scales the effective time of the Vellum solve.  This can be used to create bullet-time like effects where the physics of the Vellum solver run at a different rate than the Houdini playbar.  A value of 2 will cause cloth to fall twice as fast, and 0.1 will slow it to a tenth the speed.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:dosubstep": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "dosubstep",
+      "label": "Use Global Substeps",
+      "type": "Toggle",
+      "folders": [
+        "Solver"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:substep": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "substep",
+      "label": "Global Substeps",
+      "type": "Int",
+      "folders": [
+        "Solver"
+      ],
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "help": "Controls global substeps at the simulation level, as opposed to the vellum-specific substeps. Global substeps are best used when you need to export the substepped geometry or have specific substepping on colliders. They will use more memory per frame, however, all the substeps will be kept rather than just the final values each frame.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:substeps": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "substeps",
+      "label": "Substeps",
+      "type": "Int",
+      "folders": [
+        "Solver"
+      ],
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "help": "Each frame will be broken into this number of substeps.  Additional substeps are required for fast moving collisions or sudden forces. The default substeps can be very aggressive, usually if the Vellum solver is too stretchy, raising substeps to 2 or 5 is a good first start.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:niter": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "niter",
+      "label": "Constraint Iterations",
+      "type": "Int",
+      "folders": [
+        "Solver"
+      ],
+      "default": 100,
+      "min": 0,
+      "max": 200,
+      "help": "Within each substep, this number of passes will be taken by the constraint enforcement operations.   Stiff constraints can require more iterations to converge.  A good starting point is the diameter of the geometry - the number of edges between the farthest points.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:smoothiter": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "smoothiter",
+      "label": "Smoothing Iterations",
+      "type": "Int",
+      "folders": [
+        "Solver"
+      ],
+      "default": 10,
+      "min": 0,
+      "max": 50,
+      "help": "The default constraint iterations use a Gauss-Seidel approach that is fast to converge.  However, if it doesn't fully converge due to too high stiffness, or impossible configurations, it will leave the error as bad looking triangles.  The smoothing iterations use a Jacobi approach which is slower to converge but leaves error spread out in a more attractive fashion.  The default of ten passes helps",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:enablecollisions": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "enablecollisions",
+      "label": "Enable Collisions",
+      "type": "Toggle",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "Controls if any collision detection is done at all.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:doselfcollisions": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "doselfcollisions",
+      "label": "Self Collisions",
+      "type": "Toggle",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "Controls if self collisions are detected.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:useground": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "useground",
+      "label": "Ground Plane",
+      "type": "Toggle",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Adds a ground plane to the simulation.  The ground plane will be visualized with a blue grid.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:groundposx": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "groundposx",
+      "label": "Ground Position",
+      "type": "Float",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": 0.0,
+      "min": -1.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:groundposy": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "groundposy",
+      "label": "Ground Position",
+      "type": "Float",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": 0.0,
+      "min": -1.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:groundposz": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "groundposz",
+      "label": "Ground Position",
+      "type": "Float",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": 0.0,
+      "min": -1.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:collisionsiter": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "collisionsiter",
+      "label": "Collision Passes",
+      "type": "Int",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": 10,
+      "min": 0,
+      "max": 10,
+      "help": "Number of collision detection passes to perform.  These are interleaved between the constraint iterations.  Since collision is expensive, it is best to minimize this.   But frequent interleaving helps avoid tent-poling effects where a small collider is fighting with the no-stretch constraints. In practice we find 10 to be correct for most situations, and substeps often being a better solution to i",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:postcollisioniter": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "postcollisioniter",
+      "label": "Post Collision Passes",
+      "type": "Int",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": 3,
+      "min": 0,
+      "max": 10,
+      "help": "After all constraints are performed, a final round of collision detection is done.   Collisions are often the most noticeable failure mode, and it is ideal if the next frame can start with non-intersecting geometry. Thus a final cleanup pass can achieve these requirements.   We have found that \"number of stacked layers + 2\" is a good estimate for this number.   This allows the effect of the underl",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:resolveall": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "resolveall",
+      "label": "Resolve All Collisions",
+      "type": "Toggle",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:resolveallmax": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "resolveallmax",
+      "label": "Polish Passes",
+      "type": "Int",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": 10,
+      "min": 0,
+      "max": 10,
+      "help": "In any collision pass, any colliding pair may not be fully resolved.   This number of additional collider-pair passes will be run until they are resolved.  Since these are only performed on active colliders (and no new collision search is done) this is very cheap.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:layershock": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "layershock",
+      "label": "Layer Shock",
+      "type": "Float",
+      "folders": [
+        "Solver",
+        "Collisions"
+      ],
+      "default": 4.0,
+      "min": 1.0,
+      "max": 10.0,
+      "help": "The `layer` integer point attribute is used to flag point as belonging to different layers of cloth.  Higher numbers refer to higher layers. Layer Shock will make lower layers this many times heavier during collision evaluation, ensuring the higher layers will move out of their way.  The rest of the dynamics are unaffected by this, and the difference is fixed regardless of the number of layers bet",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:gravityx": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "gravityx",
+      "label": "Gravity",
+      "type": "Float",
+      "folders": [
+        "Forces"
+      ],
+      "default": 0.0,
+      "min": -1.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:gravityy": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "gravityy",
+      "label": "Gravity",
+      "type": "Float",
+      "folders": [
+        "Forces"
+      ],
+      "default": -9.80665,
+      "min": -1.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:gravityz": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "gravityz",
+      "label": "Gravity",
+      "type": "Float",
+      "folders": [
+        "Forces"
+      ],
+      "default": 0.0,
+      "min": -1.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:dowind": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "dowind",
+      "label": "Activation",
+      "type": "Toggle",
+      "folders": [
+        "Forces"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windx": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windx",
+      "label": "Built-in Wind",
+      "type": "Float",
+      "folders": [
+        "Forces"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windy": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windy",
+      "label": "Built-in Wind",
+      "type": "Float",
+      "folders": [
+        "Forces"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windz": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windz",
+      "label": "Built-in Wind",
+      "type": "Float",
+      "folders": [
+        "Forces"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windspeed": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windspeed",
+      "label": "Built-in Wind Speed",
+      "type": "Float",
+      "folders": [
+        "Forces"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "A scale for the wind direction.  You can set a normalized direction and then use this to set the actual wind speed, or use this as a way to increase or decrease wind speed without affecting the direction.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:winddrag": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "winddrag",
+      "label": "Built-in Wind Drag",
+      "type": "Float",
+      "folders": [
+        "Forces"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "The amount the particles are dragged by the wind force.  This is also scaled by the tangential and normal drag forces specified on the Vellum Constraints SOP to provide unequal drag depending on orientation.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:veldamping": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "veldamping",
+      "label": "Velocity Damping",
+      "type": "Float",
+      "folders": [
+        "Forces"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "A more brute force approach to reducing dynamic velocity. The velocity is scaled directly by this amount, causing sudden movements to be quickly damped.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_type": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_type",
+      "label": "Type",
+      "type": "Menu",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "The method to use to compute wind shadow. None: No wind shadowing effect is done. Ray: Rays are cast in the relative velocity of the particle to find shadowing geometry, and the wind is changed to match the shadowing geometry's velocity.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_doexternal": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_doexternal",
+      "label": "External Shadow",
+      "type": "Toggle",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_externalmask": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_externalmask",
+      "label": "External Shadow",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "（説明は /nodes/dop/popwindshadow#externalmask を参照）",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_doself": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_doself",
+      "label": "Self Shadow",
+      "type": "Toggle",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_selfmask": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_selfmask",
+      "label": "Self Shadow",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "（説明は /nodes/dop/popwindshadow#selfmask を参照）",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_maxdistance": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_maxdistance",
+      "label": "Max Distance",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_raybias": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_raybias",
+      "label": "Self Shadow Bias",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 0.0001,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_coneangle": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_coneangle",
+      "label": "Shadow Angle",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 180.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_samples": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_samples",
+      "label": "Shadow Samples",
+      "type": "Int",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 8,
+      "min": 1,
+      "max": 16,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_doblur": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_doblur",
+      "label": "Blur Wind Shadow",
+      "type": "Toggle",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "（説明は /nodes/dop/popwindshadow#doblur を参照）",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_blur_iterations": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_blur_iterations",
+      "label": "Blur Iterations",
+      "type": "Int",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 4,
+      "min": 0,
+      "max": 100,
+      "help": "（説明は /nodes/dop/popwindshadow#iterations を参照）",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_blur_influencetype": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_blur_influencetype",
+      "label": "Blur Influence Type",
+      "type": "Menu",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "（説明は /nodes/dop/popwindshadow#blur_influencetype を参照）",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_blur_proxrad": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_blur_proxrad",
+      "label": "Proximity Radius",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 0.5,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "（説明は /nodes/dop/popwindshadow#blur_proxrad を参照）",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_blur_maxneigh": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_blur_maxneigh",
+      "label": "Max Neighbors",
+      "type": "Int",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 20,
+      "min": 0,
+      "max": 50,
+      "help": "（説明は /nodes/dop/popwindshadow#blur_maxneigh を参照）",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:static_threshold": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "static_threshold",
+      "label": "Static Threshold",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Friction"
+      ],
+      "default": 0.5,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "A threshold at which to apply full friction.  When the ratio of the tangential velocity and the normal impulse is less than this, the tangential velocity will be fully eliminated through friction.  This is roughly tan() of the slope angle that will allow sliding under gravity.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:dynamic_scale": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "dynamic_scale",
+      "label": "Dynamic Scale",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Friction"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "If the static threshold fails, this controls what percentage the tangential velocity will be reduced in the dynamic friction case.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:friction": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "friction",
+      "label": "Enable External",
+      "type": "Toggle",
+      "folders": [
+        "Forces",
+        "Friction"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "A scale factor on the amount of friction effect to apply for collisions with external geometry.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:selffriction": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "selffriction",
+      "label": "Enable Self",
+      "type": "Toggle",
+      "folders": [
+        "Forces",
+        "Friction"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "A scale factor on the amount of friction effect to apply for collisions with self geometry.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:static_sdfscale": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "static_sdfscale",
+      "label": "Ground Static Scale",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Friction"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "A scale factor for the ground plane's static friction.  Useful to create frictionless grounds.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:dynamic_sdfscale": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "dynamic_sdfscale",
+      "label": "Ground Dynamic Scale",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Friction"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "A scale factor for the ground plane's dynamic friction.  Useful to create frictionless grounds.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:cacheenabled": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "cacheenabled",
+      "label": "Cache Enabled",
+      "type": "Toggle",
+      "folders": [
+        "Simulation"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "Controls if the simulation is cached to memory.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:cachemaxsize": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "cachemaxsize",
+      "label": "Cache Memory (MB)",
+      "type": "Int",
+      "folders": [
+        "Simulation"
+      ],
+      "default": 5000,
+      "min": 0,
+      "max": 1000,
+      "help": "Maximum size of the memory cache.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:autoresim": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "autoresim",
+      "label": "Enable Automatic Resimulation",
+      "type": "Toggle",
+      "folders": [
+        "Simulation"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "When any parameter inside a DOP simulation is changed, or when any referenced external node is changed, the cache of the simulation is marked as invalid. If this parameter is turned on, the next time the playbar is moved to reach a simulation time of 0, the cache will be cleared and the first simulation timestep will be recalculated. If the cache is invalidated while at a simulation time of 0, the",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:simulationtype": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "simulationtype",
+      "label": "Simulation Type",
+      "type": "Menu",
+      "folders": [
+        "Simulation"
+      ],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "Style of the simulation. Quasistatic: Each frame the simulation takes the inputs and runs them forward the given number of frames.  The final result becomes that frames result.   No frame-to-frame coherency is present. Dynamic: Each frame is solved from the previous frame, and the inputs are used to setup the first frame only.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:quasistaticframes": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "quasistaticframes",
+      "label": "Quasistatic Frames",
+      "type": "Int",
+      "folders": [
+        "Simulation"
+      ],
+      "default": 10,
+      "min": 0,
+      "max": 100,
+      "help": "The number of frames to roll forward for the quasi-static simulation.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:zerodynamics": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "zerodynamics",
+      "label": "Clear Dynamics",
+      "type": "Toggle",
+      "folders": [
+        "Simulation"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "All dynamic forces and states, such as velocities, are removed from the output.   This allows the output of a clean state to start a new simulation from, such as when completing a drape.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:targetmethod": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "targetmethod",
+      "label": "Target",
+      "type": "Menu",
+      "folders": [
+        "Advanced"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "Points on the simulation mesh can be marked as __Pin to Target__ to follow the targeted animation.   By default, this target is the first input.  But in some cases the animation you wish to target may be present in another SOP node, so that can be specified here.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:integration": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "integration",
+      "label": "Integration",
+      "type": "Menu",
+      "folders": [
+        "Advanced"
+      ],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "When integrating points forward by their velocities, curved motions like swinging pendulums will be mispredicted and be damped by the constraint projections.   A second order predictor recovers more of this curved motion and maintains more energy in the system. In any case, if collisions are detected the system will fall back to first order to avoid excessive bouncing.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:thickness": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "thickness",
+      "label": "Default Thickness",
+      "type": "Float",
+      "folders": [
+        "Advanced"
+      ],
+      "default": 0.01,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "If the incoming simulation or collision geometry has no `pscale` attribute, it will be set to this value. For simulation geometry, usually thickness should already be set by the [Vellum Constraints|Node:sop/vellumconstraints] SOP. For collision geometry, creating a `pscale` point attribute manually will override this thickness value.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:dosecondary": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "dosecondary",
+      "label": "Enable Secondary Constraint Pass",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Secondary Constraint Pass"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "If this checkbox is turned on, all constraints in the specified __Constraint Group__ will be solved in a separate, interleaved pass to the remaining constraints. There are two main uses for this option. First, there are some expensive constraint types that do not need to be solved as frequently as the rest of the constraints, so enabling this option and choosing a low __Solve Frequency__ can impro",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:secondaryfrequency": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "secondaryfrequency",
+      "label": "Solve Frequency",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Secondary Constraint Pass"
+      ],
+      "default": 0.25,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "The frequency at which to solve the secondary pass.  A setting of 1 will solve the secondary pass as often as the primary pass, while a setting of 0.25 will solve once every four passes of the primary pass (one quarter of the time).",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:domultipass": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "domultipass",
+      "label": "Enable Multi-Pass",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Multi-Pass Solve"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "The multi-pass options allow a substep to be repeated until certain conditions are met.  The current conditions are designed to fix issues that are caused by disabled points causing geometry to be caught and cause the undisabled points to generate stretching.  Since collisions always pre-empt constraints, the result is cloth or hair stretching.  Points adjacent to auto-disabled points will be them",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:maxmultipass": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "maxmultipass",
+      "label": "Maximum Passes",
+      "type": "Int",
+      "folders": [
+        "Advanced",
+        "Multi-Pass Solve"
+      ],
+      "default": 10,
+      "min": 0,
+      "max": 20,
+      "help": "The maximum number of times to repeat the substep.  If no new points need to be disabled, the process will stop immediately.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:disablestretchratio": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "disablestretchratio",
+      "label": "Disable Stretch Ratio",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Multi-Pass Solve"
+      ],
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "help": "The amount of stretch at the end of a solve step that will trigger points to be eligible for disabling.  This is to detect when failed collisions are pulling the Vellum object apart. By failing additional points the object usually can be released and result in a better result than continuing to stretch.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:domaxaccel": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "domaxaccel",
+      "label": "Cap Displacement",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Motion"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:maxaccel": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "maxaccel",
+      "label": "Max Acceleration",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Motion"
+      ],
+      "default": 30.0,
+      "min": 0.0,
+      "max": 500.0,
+      "help": "Various acceleration limiting options can be used to prevent the simulation from being over-eager to obey non-realistic forces.   These can otherwise result in large energy spikes.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:accelfallback": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "accelfallback",
+      "label": "Fallback to First Order Integration on Collision",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Motion"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "If __Max Acceleration__ is exceeded for a point, assume it signals a sharp, discontinuous collision where the second order prediction will be wrong and add erroneous motion, often in the form of bouncing.  In this case, fallback to first order integration for the affected point. NOTE: Grain and Fluid particles are always considered for fallback to first order, not only in the case of collisions.  ",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:limitaccel": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "limitaccel",
+      "label": "Limit Acceleration in Velocity Update",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Motion"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Cap the amount that velocity of a particle is allowed to change as a result of any of the dynamics.   This is useful to prevent some instant motion being mis-identified as a massive force, and thus avoid fly-away particles.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:limitdisplace": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "limitdisplace",
+      "label": "Limit Displacement on Collision",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Motion"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "During the collision resolution, if the collision correction moves a particle more than the acceleration amount, cap the effect.  The hope is to fail more gracefully when a part of a model snags on the cloth and is pulling it in a surprising fashion.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:disablebrokenwelds": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "disablebrokenwelds",
+      "label": "Disable Broken Welds",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Motion"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "When a weld breaks, the two new points start off next to each other. If the surfaces do not separate naturally due to whatever triggered the break, they may trigger collision detection and be pushed out, causing an explosive motion when breaking occurs.  This option sets the `disableself` attribute when points are de-welded to avoid these self collisions.  Note that this may cause layered cloth to",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:normalizestress": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "normalizestress",
+      "label": "Normalize Stress",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Motion"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "Normalize the stress computation over time, so that the computed values are more predictable as the __Substeps__ parameter changes.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:slidingmethod": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "slidingmethod",
+      "label": "Sliding Method",
+      "type": "Menu",
+      "folders": [
+        "Advanced",
+        "Motion"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "The method used for finding the next closest position on the target geometry when sliding __Attach to Geometry__ or __Stitch Points__ constraints. __Closest Point__ simply chooses the closest point on the target geometry to the projected sliding position.  This approach is fast but can improperly jump across concavities in the target geometry.  __Traverse Polygons__ starts from the current target ",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:doautosleep": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "doautosleep",
+      "label": "Enable Auto Sleep",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Sleeping"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Particles that remain near-stationary for sufficient time will be put to sleep by setting their `stopped` attribute to `1`. You can use the Pinned visualization to visualize which points are sleeping.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:sleep_velocitythreshold": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "sleep_velocitythreshold",
+      "label": "Velocity Threshold",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Sleeping"
+      ],
+      "default": 0.01,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "How slowly particles need to be moving before they are eligible for sleeping.  The amount of time they remain below this speed is accumulated in the `deactivation_time` attribute.  If they exceed this speed, the `deactivation_time` is reset to zero.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:sleep_delay": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "sleep_delay",
+      "label": "Sleep Delay",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Sleeping"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "How many seconds particles need to remain at or below the velocity threshold before they are put to sleep.  See the [POP Awaken|Node:dop/popawaken] DOP for methods to wake the particles back up again.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:grain_searchscale": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "grain_searchscale",
+      "label": "Search Scale",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Grain Collisions"
+      ],
+      "default": 2.5,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:grain_maxneighbor": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "grain_maxneighbor",
+      "label": "Max Neighbors",
+      "type": "Int",
+      "folders": [
+        "Advanced",
+        "Grain Collisions"
+      ],
+      "default": 20,
+      "min": 0,
+      "max": 10,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:grain_uniformradius": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "grain_uniformradius",
+      "label": "Assume Uniform Radius",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Grain Collisions"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:ignorepiece": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "ignorepiece",
+      "label": "Ignore Neighbors with Same Name or Piece",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Grain Collisions"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:repulsionweight": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "repulsionweight",
+      "label": "Repulsion Weight",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Grain Collisions"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:attractionweight": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "attractionweight",
+      "label": "Attraction Weight",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Grain Collisions"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:fluid_searchscale": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "fluid_searchscale",
+      "label": "Kernel Radius Scale",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Fluids"
+      ],
+      "default": 4.0,
+      "min": 3.0,
+      "max": 5.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:viscosity": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "viscosity",
+      "label": "Viscosity",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Fluids"
+      ],
+      "default": 5.0,
+      "min": 0.0,
+      "max": 1000.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:collisionviscosity": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "collisionviscosity",
+      "label": "Collision Viscosity",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Fluids"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1000.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:viscositysolver": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "viscositysolver",
+      "label": "Viscosity Solver",
+      "type": "Menu",
+      "folders": [
+        "Advanced",
+        "Fluids"
+      ],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:tol": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "tol",
+      "label": "Viscosity Tolerance",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Fluids"
+      ],
+      "default": 0.001,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:maxviscosityiterations": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "maxviscosityiterations",
+      "label": "Max Viscosity Iterations",
+      "type": "Int",
+      "folders": [
+        "Advanced",
+        "Fluids"
+      ],
+      "default": 500,
+      "min": 0,
+      "max": 1000,
+      "help": "",
+      "notes": [],
+      "status": "screened",
+      "reason": "全ての値で既定値と完全に同一の絵（1画素も変わっていない）",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
+      "verdict": "差なし",
+      "values": [
+        100.0,
+        500.0,
+        1000.0
+      ],
+      "vs_default_db": [
+        "inf",
+        null,
+        "inf"
+      ],
+      "neighbour_db": [
+        "inf",
+        "inf"
+      ],
+      "broken": {},
+      "frame": 36,
+      "same_db": 50.0,
+      "screened_at": "2026-09-11 00:32:41"
+    },
+    "/obj/SUBJECT/SOLVER:surfacetension": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "surfacetension",
+      "label": "Surface Tension",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Fluids"
+      ],
+      "default": 0.0001,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:adhesion": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "adhesion",
+      "label": "Adhesion",
+      "type": "Float",
+      "folders": [
+        "Advanced",
+        "Fluids"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:dosort": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "dosort",
+      "label": "Spatial Sort",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Fluids"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:sortinterval": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "sortinterval",
+      "label": "Spatial Sort Interval",
+      "type": "Int",
+      "folders": [
+        "Advanced",
+        "Fluids"
+      ],
+      "default": 20,
+      "min": 0,
+      "max": 10,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:oclgraphcolor": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "oclgraphcolor",
+      "label": "OpenCL Graph Coloring",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "OpenCL"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "When doing graph coloring, a fast parallel OpenCL algorithm is used. Unfortunately it may require 10x more memory than the rest of the solve on tetrahedral meshes.  Thus, systems that might fit in memory for solving will not succeed the color pass.  Disabling this forces all graph coloring to be done in a slower sequential manner, preserving RAM for the actual solve.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:oclneighborsearch": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "oclneighborsearch",
+      "label": "OpenCL Neighbor Search",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "OpenCL"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "Perform any neighbor searches for grains and fluids using OpenCL, which is faster than the CPU but can use a bit more GPU memory.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:savecheckpoints": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "savecheckpoints",
+      "label": "Save Checkpoints",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Checkpoints"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:checkpoint_enableversion": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "checkpoint_enableversion",
+      "label": "Enable Version",
+      "type": "Toggle",
+      "folders": [
+        "Advanced",
+        "Checkpoints"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:checkpoint_version": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "checkpoint_version",
+      "label": "Version",
+      "type": "Int",
+      "folders": [
+        "Advanced",
+        "Checkpoints"
+      ],
+      "default": 1,
+      "min": 1,
+      "max": 25,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:checkpoint_explicitcachensteps": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "checkpoint_explicitcachensteps",
+      "label": "Checkpoint Trail Length",
+      "type": "Int",
+      "folders": [
+        "Advanced",
+        "Checkpoints"
+      ],
+      "default": 0,
+      "min": 0,
+      "max": 10,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:checkpoint_explicitcachespacing": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "checkpoint_explicitcachespacing",
+      "label": "Checkpoint Interval",
+      "type": "Int",
+      "folders": [
+        "Advanced",
+        "Checkpoints"
+      ],
+      "default": 1,
+      "min": 1,
+      "max": 100,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:showcollision": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "showcollision",
+      "label": "Show Collision",
+      "type": "Toggle",
+      "folders": [
+        "Visualize"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "Show the collision object as a blue wireframe.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:showguide": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "showguide",
+      "label": "Show Guide Geometry",
+      "type": "Toggle",
+      "folders": [
+        "Visualize"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "Show additional guide geometry from the solver.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_showthickness": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_showthickness",
+      "label": "showthickness",
+      "type": "Toggle",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_thicknesscolorr": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_thicknesscolorr",
+      "label": "Thickness",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_thicknesscolorg": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_thicknesscolorg",
+      "label": "Thickness",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_thicknesscolorb": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_thicknesscolorb",
+      "label": "Thickness",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_showthicknessextrude": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_showthicknessextrude",
+      "label": "Extrude",
+      "type": "Toggle",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_showfailedself": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_showfailedself",
+      "label": "showfailedselfcol",
+      "type": "Toggle",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_failedselfr": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_failedselfr",
+      "label": "Failed Self Collision",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_failedselfg": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_failedselfg",
+      "label": "Failed Self Collision",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_failedselfb": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_failedselfb",
+      "label": "Failed Self Collision",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_showfailedexternal": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_showfailedexternal",
+      "label": "showfailedexternalcol",
+      "type": "Toggle",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_failedexternalr": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_failedexternalr",
+      "label": "Failed External Collision",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_failedexternalg": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_failedexternalg",
+      "label": "Failed External Collision",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.45,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_failedexternalb": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_failedexternalb",
+      "label": "Failed External Collision",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_showwelds": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_showwelds",
+      "label": "showwelds",
+      "type": "Toggle",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_weldcolorr": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_weldcolorr",
+      "label": "Welds",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_weldcolorg": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_weldcolorg",
+      "label": "Welds",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_weldcolorb": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_weldcolorb",
+      "label": "Welds",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 0.45,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_colvisscale": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_colvisscale",
+      "label": "Radius Scale",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Geometry"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_usegroup": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_usegroup",
+      "label": "usegroup",
+      "type": "Toggle",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_showpin": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_showpin",
+      "label": "showpin",
+      "type": "Toggle",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_pincolorr": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_pincolorr",
+      "label": "Pin to Target",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": 0.25,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_pincolorg": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_pincolorg",
+      "label": "Pin to Target",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_pincolorb": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_pincolorb",
+      "label": "Pin to Target",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_showstitch": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_showstitch",
+      "label": "showstitch",
+      "type": "Toggle",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_stitchcolorr": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_stitchcolorr",
+      "label": "Stitch Points",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_stitchcolorg": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_stitchcolorg",
+      "label": "Stitch Points",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_stitchcolorb": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_stitchcolorb",
+      "label": "Stitch Points",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_showattach": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_showattach",
+      "label": "showattach",
+      "type": "Toggle",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_attachcolorr": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_attachcolorr",
+      "label": "Attach to Geometry",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_attachcolorg": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_attachcolorg",
+      "label": "Attach to Geometry",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": 0.45,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_attachcolorb": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_attachcolorb",
+      "label": "Attach to Geometry",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:guide_constraintvisradius": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "guide_constraintvisradius",
+      "label": "Radius",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Constraints"
+      ],
+      "default": 0.01,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_mode": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_mode",
+      "label": "False Color Mode",
+      "type": "Menu",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_displaygeo": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_displaygeo",
+      "label": "Display Visualization Geometry",
+      "type": "Toggle",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_maxstretchstress": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_maxstretchstress",
+      "label": "Max Stretch Stress",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 0.01,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_maxbendstress": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_maxbendstress",
+      "label": "Max Bend Stress",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 0.001,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_maxstretchdistance": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_maxstretchdistance",
+      "label": "Max Stretch Distance",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 0.01,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_maxstretchratio": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_maxstretchratio",
+      "label": "Max Stretch Ratio",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_maxbendangle": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_maxbendangle",
+      "label": "Max Bend Angle",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 5.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_maxstretchplasticflow": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_maxstretchplasticflow",
+      "label": "Max Stretch Plastic Flow",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_maxbendplasticflow": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_maxbendplasticflow",
+      "label": "Max Bend Plastic Flow",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 10.0,
+      "min": 0.0,
+      "max": 100.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_maxvolumestress": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_maxvolumestress",
+      "label": "Max Volume Stress",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 0.01,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_maxvolumedistance": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_maxvolumedistance",
+      "label": "Max Volume Distance",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 0.0001,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:vis_maxvolumeratio": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "vis_maxvolumeratio",
+      "label": "Max Volume Ratio",
+      "type": "Float",
+      "folders": [
+        "Visualize",
+        "Visualization"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_maskfalloff1pos": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_maskfalloff1pos",
+      "label": "Position",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_maskfalloff1value": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_maskfalloff1value",
+      "label": "Value",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_maskfalloff1interp": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_maskfalloff1interp",
+      "label": "Interpolation",
+      "type": "Menu",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_maskfalloff2pos": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_maskfalloff2pos",
+      "label": "Position",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_maskfalloff2value": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_maskfalloff2value",
+      "label": "Value",
+      "type": "Float",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/SOLVER:windshadow_maskfalloff2interp": {
+      "node": "/obj/SUBJECT/SOLVER",
+      "parm": "windshadow_maskfalloff2interp",
+      "label": "Interpolation",
+      "type": "Menu",
+      "folders": [
+        "Forces",
+        "Wind Shadowing"
+      ],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:constrainttype": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "constrainttype",
+      "label": "Constraint Type",
+      "type": "Menu",
+      "folders": [],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "The type of constraint to generate.   This affects the visibility of many of the other parameters.   Usually this is set by using the appropriate tab-menu macro. None: No constraints are generated. Distance Along Edges: Turns each edge in the display geometry into a distance constraint maintaining that edge length. Bend Across Triangles: Each pair of triangles (or implied triangles if input is qua",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchtype": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchtype",
+      "label": "Stretch Type",
+      "type": "Menu",
+      "folders": [],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "Selects which type of Stretch constraints are used when the __Constraint Type__ is set to __Cloth__. The linear __Triangle Stretch__ constraints converge to their proper stiffness faster than __Distance Along Edges__ at higher cloth resolutions, but do not support anisotropy via the __Enable Warp/Weft__ parameter.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendtype": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendtype",
+      "label": "Bend Type",
+      "type": "Menu",
+      "folders": [],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "Selects which type of constraint is used across triangles when the __Constraint Type__ is set to __Cloth__. Angle: Constrain the initial dihedral angle between triangles. This is mostly independent of topology and can have a consistent strength. It also does not get stuck if the triangles invert their bend. Distance: Constrain distance between the opposite points of triangles. This can be faster, ",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:preservevol": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "preservevol",
+      "label": "Preserve Volume",
+      "type": "Toggle",
+      "folders": [],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "When the __Constraint Type__ is set to __Tetrahedral Stretch__, also apply a constraint that preserves volume with a very high internal stiffness and the specified __Damping Ratio__, similar to the way the __Tetrahedral Volume__ constraint functions.  Note that for more control, or if experiencing instabilities due to the very high stiffness, you can turn this option off and add a subsequent __Vel",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:linear": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "linear",
+      "label": "Model",
+      "type": "Menu",
+      "folders": [],
+      "default": 2,
+      "min": null,
+      "max": null,
+      "help": "The energy model used for __Triangle Stretch__, __Tetrahedral Stretch__, and __Tetrahedral Fiber__ constraints. Non-Linear ARAP: An As-Rigid-As-Possible model that gives good behavior for low stiffness, high stretching configurations. Linear ARAP: An As-Rigid-As-Possible model that generally performs better for high stiffness, low stretching configurations like hard solids or cloth. Scale-Invarian",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:grouptype": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "grouptype",
+      "label": "Group Type",
+      "type": "Menu",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "Controls the type used for the source points for the constraint.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:triangulation": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "triangulation",
+      "label": "Triangulation",
+      "type": "Menu",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 2,
+      "min": null,
+      "max": null,
+      "help": "Distance and bend constraints are usually built on a triangle mesh. Rather than forcing the input to be triangulated, it can be implicitly triangulated. None: Do not triangulate the input implicitly. Regular: Consistently split into triangles. Alternating: Attempt to reverse the triangle splitting so a series of quads have a less regular structure.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:domass": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "domass",
+      "label": "Mass",
+      "type": "Menu",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:mass": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "mass",
+      "label": "Mass",
+      "type": "Float",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "`mass` value for the points.  The mass affects how they interact with POP forces and other pieces of Vellum geometry, and how strong the constraints are. Unchanged: Do not set the `mass` attribute. Set Uniform: Set the `mass` attribute to the specified value. Calculate Uniform: Calculate a uniform value for the `mass` attribute for the points on a per-piece basis, as determined by the __Define Pie",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:density": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "density",
+      "label": "Density",
+      "type": "Float",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "The volume used in calculating mass is scaled by this value when __Mass__ is set to __Calculate Uniform__ or __Calculate Varying__.  This value can be further set to __Scale By Attribute__ to scale by the specified point attribute in the varying case.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:scaledensitymode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "scaledensitymode",
+      "label": "scaledensitymode",
+      "type": "Menu",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dothickness": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dothickness",
+      "label": "Thickness",
+      "type": "Menu",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:thickness": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "thickness",
+      "label": "Thickness",
+      "type": "Float",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 0.01,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "Thickness of the points, stored in `pscale`.  Used also for the triangle thickness and curve thickness. Unchanged: Do not set the `pscale` attribute. Set Uniform: Set the `pscale` attribute to the specified value. Calculate Uniform: Calculate a uniform value for the `pscale` attribute for the points on a per-piece basis, as determined by the __Define Pieces__ setting.  The thickness value is based",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:thicknessscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "thicknessscale",
+      "label": "Edge Length Scale",
+      "type": "Float",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 0.25,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "Each edge length will be scaled by this value before being used in the __Thickness__ calculation.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:scalethicknessmode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "scalethicknessmode",
+      "label": "scalethicknessmode",
+      "type": "Menu",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:vizthickness": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "vizthickness",
+      "label": "Visualize Thickness",
+      "type": "Toggle",
+      "folders": [
+        "Geometry"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Visualize the thickness of each point with a sphere.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:piecemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "piecemode",
+      "label": "Define Pieces",
+      "type": "Menu",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "Pressure constraints split the object into disjoint pieces to compute and enforce the volume. Mass and Thickness calculations, and Glue and Strut constraints also need a way to define separate pieces. From Attribute: This integer or string attribute's unique values are used to define each piece. From Connectivity: Connectivity of the input geometry is used to define the pieces.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:neighbordist": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "neighbordist",
+      "label": "Neighbor Distance",
+      "type": "Int",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 2,
+      "min": 1,
+      "max": 6,
+      "help": "The number of edges between the two end points of each surface strut constraint.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dolayer": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dolayer",
+      "label": "Layer",
+      "type": "Toggle",
+      "folders": [
+        "Geometry"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:layer": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "layer",
+      "label": "Layer",
+      "type": "Int",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 0,
+      "min": 0,
+      "max": 10,
+      "help": "The points will be given this as their `layer` attribute, useful in cloth simulations to define a stacking order for Layer Shock.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:computeorient": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "computeorient",
+      "label": "Compute Missing Orientation",
+      "type": "Toggle",
+      "folders": [
+        "Geometry"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "For deforming hair geometry as input, the Vellum Solver requires an `orient` attribute that provides a stable rotation basis over time.  This attribute can be created with the [Guide Deform SOP|Node:sop/guidedeform] using rest and animated skin, or if this parameter is enabled and `orient` is missing, Vellum Constraints will calculate it by extracting a per-hair transform relative to the specified",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:orientframe": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "orientframe",
+      "label": "Rest Orientation Frame",
+      "type": "Int",
+      "folders": [
+        "Geometry"
+      ],
+      "default": 1,
+      "min": 0,
+      "max": 100,
+      "help": "The reference frame used when computing hair orientations if __Compute Missing Orientation__ is enabled.  This should usually be set to the start frame of the simulation.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:showguide": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "showguide",
+      "label": "Show Guide Geometry",
+      "type": "Toggle",
+      "folders": [
+        "Geometry"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "The newly generated constraints are displayed as guide geometry, which is useful to ensure points are connected in the order expected. However, the guide display can become quite complex when many constraints are created, especially when trying to select Vellum geometry in the viewport in downstream nodes. This parameter allows hiding the guide geometry if necessary.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:targetgrouptype": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "targetgrouptype",
+      "label": "Target Group Type",
+      "type": "Menu",
+      "folders": [
+        "Target Geometry"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "The type of group for the constraint targets.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:doattachframe": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "doattachframe",
+      "label": "doattachframe",
+      "type": "Toggle",
+      "folders": [
+        "Target Geometry"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:attachframe": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "attachframe",
+      "label": "Attach Frame",
+      "type": "Int",
+      "folders": [
+        "Target Geometry"
+      ],
+      "default": 1,
+      "min": 0,
+      "max": 10,
+      "help": "Controls which frame of the third input is used for attaching the geometry.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dragnormal": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dragnormal",
+      "label": "Normal Drag",
+      "type": "Float",
+      "folders": [
+        "Drag"
+      ],
+      "default": 10.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "Creates the `dragnormal` attribute and sets it to this value.  This scales the drag of the point when wind forces are applied to it in the normal direction of its surface, or perpendicular to the curve. Differing normal and tangent drag is essential for flapping flags.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dragtangent": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dragtangent",
+      "label": "Tangent Drag",
+      "type": "Float",
+      "folders": [
+        "Drag"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "Creates the `dragtangent` attribute and sets it to this value. This scales the drag of the point when wind forces are applied to it in the tangent direction of its surface, or tangent to the curve.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:pintype": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "pintype",
+      "label": "Pin Type",
+      "type": "Menu",
+      "folders": [
+        "Pin to Animation"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "How to pin the point position to the target animation. Permanent: The `mass` attribute is set to zero, making the point a hard constraint.  However, as no original value of `mass` is stored, it isn't possible to release this constraint later. Stopped: The `stopped` attribute is set to `1` to make the point a hard constraint.  `mass` is unaffected so a POP operation can restore the dynamics of the ",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:pinrotation": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "pinrotation",
+      "label": "Orientation Pin Type",
+      "type": "Menu",
+      "folders": [
+        "Pin to Animation"
+      ],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "In addition to holding the location of a point, for hair the orientation often may also be constrained. NOTE: This constrains the orientation of the out-going line segments of the hair.  So orientation-pinning the tip of a hair will not affect the angle of the incoming hair. None: Do not constrain the orientation to the target animation. Same as Position: Use the position constraint rules.  In cas",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:matchanimation": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "matchanimation",
+      "label": "Match Animation",
+      "type": "Toggle",
+      "folders": [
+        "Pin to Animation"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Controls if the target is updated from the animation during the solver or if only the initial value is used.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:useclosestpt": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "useclosestpt",
+      "label": "Constrain to Closest Point",
+      "type": "Toggle",
+      "folders": [
+        "Closest Point"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "When finding a matching point to a source point, do not go through the target points in order, but pick the point that is closest first.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:useclosestprim": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "useclosestprim",
+      "label": "Use Closest Location on Primitive",
+      "type": "Toggle",
+      "folders": [
+        "Closest Point"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "For __Attach to Geometry__ and __Stitch Points__ constraints, do not just choose the closest point, but the closest position on a primitive.  The primitive number and barycentric coordinates are then stored.  For __Stitch Points__ constraints, only polylines, triangles, and quads are supported as the __Target Geometry__ for constraint generation when this option is enabled.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:maxdistcheck": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "maxdistcheck",
+      "label": "maxdistcheck",
+      "type": "Toggle",
+      "folders": [
+        "Closest Point"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:maxdist": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "maxdist",
+      "label": "Max Distance",
+      "type": "Float",
+      "folders": [
+        "Closest Point"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "Maximum distance to consider eligible for stitching points.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dosliding": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dosliding",
+      "label": "dosliding",
+      "type": "Toggle",
+      "folders": [
+        "Closest Point"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:slidingrate": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "slidingrate",
+      "label": "Sliding Rate",
+      "type": "Float",
+      "folders": [
+        "Closest Point"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "For __Attach to Geometry__ and __Stitch Points__ constraints, the attachment point of the constraint will slide across the target surface at this rate, where 1 matches the constrained point's velocity. This option only works to slide across primitives, so __Use Closest Location on Primitive__ must be enabled and the __Target Group Type__ must be set to __Primitives__.  The method used for finding ",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:slidingscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "slidingscalemode",
+      "label": "Label",
+      "type": "Menu",
+      "folders": [
+        "Closest Point"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:glue_usecluster": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "glue_usecluster",
+      "label": "Label",
+      "type": "Toggle",
+      "folders": [
+        "Glue Search"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:glue_minradius": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "glue_minradius",
+      "label": "Min Search Dist",
+      "type": "Float",
+      "folders": [
+        "Glue Search"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Minimum distance to look for eligible glue points.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:glue_radius": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "glue_radius",
+      "label": "Max Search Dist",
+      "type": "Float",
+      "folders": [
+        "Glue Search"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Maximum distance to look for eligible glue points.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:glue_numpt": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "glue_numpt",
+      "label": "Max Search Points",
+      "type": "Int",
+      "folders": [
+        "Glue Search"
+      ],
+      "default": 10,
+      "min": 0,
+      "max": 10,
+      "help": "Maximum number of points to consider for eligible glue points.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:glue_searchpref": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "glue_searchpref",
+      "label": "Search Preference",
+      "type": "Menu",
+      "folders": [
+        "Glue Search"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "The order in which points should be considered for eligible glue points. NOTE: You will likely need to increase the __Max Search Points__ parameter when setting this parameter to __Farthest__, as the internal search function always returns nearest points first.  There must be sufficient points in the search query to reach the farthest points as specified by the __Max Search Dist__ parameter.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:glue_constraintsperpt": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "glue_constraintsperpt",
+      "label": "Constraints Per Point",
+      "type": "Int",
+      "folders": [
+        "Glue Search"
+      ],
+      "default": 1,
+      "min": 1,
+      "max": 3,
+      "help": "Number of glue constraints to create for each point.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:glue_detach_chance": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "glue_detach_chance",
+      "label": "Detach Object Chance",
+      "type": "Float",
+      "folders": [
+        "Glue Search"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Each piece has this chance to be marked ineligible for gluing and receive and generate no glue constraints.  This allows for stray hairs.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:glue_point_chance": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "glue_point_chance",
+      "label": "Detach Point Chance",
+      "type": "Float",
+      "folders": [
+        "Glue Search"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Each pair of points has this chance to be being marked ineligible for gluing.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:glue_seed": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "glue_seed",
+      "label": "Seed",
+      "type": "Float",
+      "folders": [
+        "Glue Search"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Random seed used to generate the detach chances.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:strut_maxlen": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "strut_maxlen",
+      "label": "Max Strut Length",
+      "type": "Float",
+      "folders": [
+        "Strut Search"
+      ],
+      "default": 100.0,
+      "min": 0.0,
+      "max": 100.0,
+      "help": "Maximum distance to create struts.   Must be large enough to cover the diameter of the object, but avoiding extremely long struts can help avoid artifacts.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:strut_usedirattrib": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "strut_usedirattrib",
+      "label": "Direction Attribute",
+      "type": "Toggle",
+      "folders": [
+        "Strut Search"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:strut_invertnormal": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "strut_invertnormal",
+      "label": "Invert Normals",
+      "type": "Toggle",
+      "folders": [
+        "Strut Search"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Invert the sense of the objects normals for sending rays, useful if the incoming geometry has reversed normals.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:strut_testnormals": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "strut_testnormals",
+      "label": "Test Normals",
+      "type": "Toggle",
+      "folders": [
+        "Strut Search"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "Verify the goal of the strut has a normal suggesting it was properly hit from the inside.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:strut_jitter": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "strut_jitter",
+      "label": "Direction Jitter",
+      "type": "Float",
+      "folders": [
+        "Strut Search"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 2.0,
+      "help": "Jitter the direction the strut is sent in to break symmetry in the struts.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:strut_constraintsperpt": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "strut_constraintsperpt",
+      "label": "Constraints Per Point",
+      "type": "Int",
+      "folders": [
+        "Strut Search"
+      ],
+      "default": 1,
+      "min": 1,
+      "max": 3,
+      "help": "Maximum number of struts to add for each point.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:strut_point_chance": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "strut_point_chance",
+      "label": "Detach Point Chance",
+      "type": "Float",
+      "folders": [
+        "Strut Search"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Chance of a point being marked ineligible for struts.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:strut_seed": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "strut_seed",
+      "label": "Seed",
+      "type": "Float",
+      "folders": [
+        "Strut Search"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Random seed to control the jitter and detach chances.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:strut_rayoff": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "strut_rayoff",
+      "label": "Ray Offset",
+      "type": "Float",
+      "folders": [
+        "Strut Search"
+      ],
+      "default": 0.01,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "The initial ray for the strut needs an offset to avoid hitting the surface it was sent from.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchstiffness": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchstiffness",
+      "label": "Stiffness",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "The stiffness of the constraint, which controls how strongly the constraint pulls particles back towards its initial rest state.  To dial in initial values, change by factors of 10.",
+      "notes": [
+        "実効値 = 値 x 10^10（stretchstiffnessexp）"
+      ],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchstiffnessexp": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchstiffnessexp",
+      "label": "   ×",
+      "type": "Menu",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 10,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [
+        "stretchstiffness の指数。振るならこちら側"
+      ],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchstiffnessscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchstiffnessscalemode",
+      "label": "stretchstiffnessscalemode",
+      "type": "Menu",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchstiffnessscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchstiffnessscale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single slider control over the stiffness. As effective changes in stiffness requires painting over orders of magnitude, this has a logarithmic effect.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchdampingratio": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchdampingratio",
+      "label": "Damping Ratio",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 0.001,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Stiff constraints tend to vibrate or jitter unacceptably.   Damping reduces this by bleeding energy when evaluating the constraint.  Too much damping can prevent the constraint from being satisfied, however.   Values less than 1 must be used.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchdampingscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchdampingscalemode",
+      "label": "stretchdampingscalemode",
+      "type": "Menu",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchdampingscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchdampingscale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single slider to control damping, multiplied into the damping ratio.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchrestscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchrestscale",
+      "label": "Rest Length Scale",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "help": "The rest length of the distance constraints will be the original distance between the points.   This scale can be used to increase or decrease this.   Setting to `0` will try to collapse the points together.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:docompress": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "docompress",
+      "label": "Enable Compression Settings",
+      "type": "Toggle",
+      "folders": [
+        "Stretch"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:compressstiffness": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "compressstiffness",
+      "label": "Compression Stiffness",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "The stiffness of the constraint when being compressed below its initial rest distance.  A very stiff low resolution cloth can become unbendable due to its topology, rather than due to the bend constraints.  A network of triangles has very few ways that it can bend if it is fully stiff.  By setting a lower compression stiffness, the cloth is allowed to collapse and regain its fluidity.  Usually thi",
+      "notes": [
+        "実効値 = 値 x 10^3（compressstiffnessexp）"
+      ],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:compressstiffnessexp": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "compressstiffnessexp",
+      "label": "   ×",
+      "type": "Menu",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 3,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [
+        "compressstiffness の指数。振るならこちら側"
+      ],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:compressstiffnessscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "compressstiffnessscalemode",
+      "label": "compressstiffnessscalemode",
+      "type": "Menu",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:compressstiffnessscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "compressstiffnessscale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dotangent": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dotangent",
+      "label": "Enable Tangent Settings",
+      "type": "Toggle",
+      "folders": [
+        "Stretch"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:tangentstiffness": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "tangentstiffness",
+      "label": "Tangent Stiffness",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "The stiffness of the constraint in the direction tangent to the target surface for Attach to Geometry constraints.  Tangent stiffness can be useful to help hold up pants or a belt that are attached to a body at the waist, for example. NOTE: Setting this parameter to a non-zero value creates an additional constraint from the Vellum point to the line that intersects the closest point on the target s",
+      "notes": [
+        "実効値 = 値 x 10^3（tangentstiffnessexp）"
+      ],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:tangentstiffnessexp": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "tangentstiffnessexp",
+      "label": "   ×",
+      "type": "Menu",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 3,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [
+        "tangentstiffness の指数。振るならこちら側"
+      ],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dostretchstiffnessdropoff": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dostretchstiffnessdropoff",
+      "label": "dostretchstiffnessfalloff",
+      "type": "Toggle",
+      "folders": [
+        "Stretch"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchstiffnessdropoff": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchstiffnessdropoff",
+      "label": "Stiffness Dropoff",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "The distance from the rest length at which the stiffness of the constraint decreases to zero, or increases from zero to full stiffness, depending on the direction of the dropoff.  A __Decreasing__ dropoff means that the stiffness starts at full strength and decreases to zero at the Dropoff distance from the rest length.  An __Increasing__ dropoff means the stiffness starts at zero and increases to",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchstiffnessdropoffdir": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchstiffnessdropoffdir",
+      "label": "stretchstiffnessfalloffdir",
+      "type": "Menu",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dostretchstiffnessdropoffmin": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dostretchstiffnessdropoffmin",
+      "label": "dostretchstiffnessdropoffmin",
+      "type": "Toggle",
+      "folders": [
+        "Stretch"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchstiffnessdropoffmin": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchstiffnessdropoffmin",
+      "label": "Min Stiffness",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 90.0,
+      "help": "If this checkbox is turned on, this value will be the minimum stiffness used when calculating the __Stiffness Dropoff__.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchanisotropy": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchanisotropy",
+      "label": "Enable Warp/Weft",
+      "type": "Toggle",
+      "folders": [
+        "Stretch"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Enables an adjustment to the stiffness based on orientation, allowing a cloth network to stretch more on one axis than another.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchwarpscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchwarpscale",
+      "label": "Warp Scale",
+      "type": "Float",
+      "folders": [
+        "Stretch",
+        "Anisotropy"
+      ],
+      "default": 1.0,
+      "min": 0.1,
+      "max": 1.0,
+      "help": "Scale factor for cloth lined up with the material u axis.   This is a logarithmic multiplier.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchweftscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchweftscale",
+      "label": "Weft Scale",
+      "type": "Float",
+      "folders": [
+        "Stretch",
+        "Anisotropy"
+      ],
+      "default": 1.0,
+      "min": 0.1,
+      "max": 1.0,
+      "help": "Scale factor for cloth lined up with the material v axis.   This is a logarithmic multiplier.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchshearscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchshearscale",
+      "label": "Shear Scale",
+      "type": "Float",
+      "folders": [
+        "Stretch",
+        "Anisotropy"
+      ],
+      "default": 1.0,
+      "min": 0.1,
+      "max": 1.0,
+      "help": "Scale factor for cloth lined up with the diagonal material uv axis.   This is a logarithmic multiplier.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dostretchvelblend": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dostretchvelblend",
+      "label": "dostretchvelblend",
+      "type": "Toggle",
+      "folders": [
+        "Stretch"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchvelblend": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchvelblend",
+      "label": "Velocity Blend",
+      "type": "Float",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Constraints that attach to geometry or pin to the target can optionally blend in the target's velocity.  This requires the target to have a `v` point attribute to provide the local velocity.  The blending is done per 24th of a second, so a blend factor of 0.5 will mix in 50% of the target velocity in a standard frame. Blending in velocity will highly damp the simulation, but can be useful to allow",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchvelblendscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchvelblendscalemode",
+      "label": "Label",
+      "type": "Menu",
+      "folders": [
+        "Stretch"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplasticity": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplasticity",
+      "label": "Enable Plasticity",
+      "type": "Toggle",
+      "folders": [
+        "Stretch"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Plasticity allows an object to flow to a new rest position.  Under sufficient stress, the rest coordinates are blended to the current dynamic coordinates, so the object will retain its new shape.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplasticthreshold": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplasticthreshold",
+      "label": "Threshold",
+      "type": "Float",
+      "folders": [
+        "Stretch",
+        "Plasticity"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "Below this threshold the material will return to its original shape. When deformed past the threshold, it will begin to creep into its new configuration.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplasticthresholdscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplasticthresholdscalemode",
+      "label": "stretchplasticthresholdscalemode",
+      "type": "Menu",
+      "folders": [
+        "Stretch",
+        "Plasticity"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplasticthresholdscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplasticthresholdscale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Stretch",
+        "Plasticity"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single scale slider for the threshold.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplasticthresholdratio": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplasticthresholdratio",
+      "label": "Ratio of Current Rest Length",
+      "type": "Toggle",
+      "folders": [
+        "Stretch",
+        "Plasticity"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "The threshold can either be an absolute distance, or be a percentage distance.   A value of 0.1 as a ratio would mean stretching of 110% of compression of 90% will trigger plastic flow.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplasticrate": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplasticrate",
+      "label": "Rate",
+      "type": "Float",
+      "folders": [
+        "Stretch",
+        "Plasticity"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "The speed at which the material adopts its new rest lengths when it begins to flow.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplasticratescalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplasticratescalemode",
+      "label": "stretchplasticratescalemode",
+      "type": "Menu",
+      "folders": [
+        "Stretch",
+        "Plasticity"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplasticratescale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplasticratescale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Stretch",
+        "Plasticity"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single scale slider for the plastic rate.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplastichardening": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplastichardening",
+      "label": "Hardening",
+      "type": "Float",
+      "folders": [
+        "Stretch",
+        "Plasticity"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "Some plastic materials become stiffer after they've undergone deformation. These will have a hardening greater than 1.  Some become softer so will have hardening less than 1. This is a logarithmic multiplier on stiffness.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplastichardeningscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplastichardeningscalemode",
+      "label": "stretchplastichardeningmode",
+      "type": "Menu",
+      "folders": [
+        "Stretch",
+        "Plasticity"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:stretchplastichardeningscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "stretchplastichardeningscale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Stretch",
+        "Plasticity"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single scale slider for plastic hardening.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dostretchgrp": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dostretchgrp",
+      "label": "dostretchgrp",
+      "type": "Toggle",
+      "folders": [
+        "Stretch"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:keepuniquestretch": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "keepuniquestretch",
+      "label": "Keep Unique within Output Group",
+      "type": "Toggle",
+      "folders": [
+        "Stretch"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "Ensures that a particular point can only be constrained once by the constraints in the __Output Group__.  When dynamically creating constraints it can be common to re-create constraints between the same points every frame.  Keeping the points unique within the output group prevents a constant accumulation of constraints.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendweld": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendweld",
+      "label": "Add Bend across Welds",
+      "type": "Toggle",
+      "folders": [
+        "Bend"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "When welding points together, two outside edges may become an inside edge. If they do not gain any bend constraints the seam will be weak and noticeably fold or kink.  This option generates bend constraints where this is detected.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendcopystiffness": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendcopystiffness",
+      "label": "Copy Neighboring Stiffness",
+      "type": "Toggle",
+      "folders": [
+        "Bend"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "The value of the generated bend constraints can be copied from the bend of surrounding triangles, ensuring a consistent piece of cloth is built without having to channel link parameters.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendstiffness": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendstiffness",
+      "label": "Stiffness",
+      "type": "Float",
+      "folders": [
+        "Bend"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "The stiffness of bend constraints.  To dial in initial values, change by factors of 10. NOTE: Bend constraints are based on angle differences, so higher resolution cloths will require higher stiffness to exhibit similar radii of curvature. NOTE: Very high bend stiffness on high resolution models will require a very large number of iterations to converge.",
+      "notes": [
+        "実効値 = 値 x 10^-4（bendstiffnessexp）"
+      ],
+      "status": "screened",
+      "reason": "既定値との差 34.2〜37.4 dB",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
+      "verdict": "採用",
+      "values": [
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ],
+      "vs_default_db": [
+        37.44,
+        null,
+        35.33,
+        34.22
+      ],
+      "neighbour_db": [
+        37.44,
+        35.33,
+        34.67
+      ],
+      "broken": {},
+      "frame": 36,
+      "same_db": 50.0,
+      "screened_at": "2026-09-11 00:32:41"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendstiffnessexp": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendstiffnessexp",
+      "label": "   ×",
+      "type": "Menu",
+      "folders": [
+        "Bend"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [
+        "bendstiffness の指数。振るならこちら側"
+      ],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendstiffnessscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendstiffnessscalemode",
+      "label": "bendstiffnessscalemode",
+      "type": "Menu",
+      "folders": [
+        "Bend"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendstiffnessscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendstiffnessscale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Bend"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single slider control over the stiffness. As effective changes in stiffness requires painting over orders of magnitude, this has a logarithmic effect.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:benddampingratio": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "benddampingratio",
+      "label": "Damping Ratio",
+      "type": "Float",
+      "folders": [
+        "Bend"
+      ],
+      "default": 0.01,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Stiff constraints tend to vibrate or jitter unacceptably.   Damping reduces this by bleeding energy when evaluating the constraint.  Too much damping can prevent the constraint from being satisfied, however.   Values less than 1 should be used.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:benddampingscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "benddampingscalemode",
+      "label": "benddampingscalemode",
+      "type": "Menu",
+      "folders": [
+        "Bend"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:benddampingscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "benddampingscale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Bend"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single slider to control damping, multiplied into the damping ratio.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendrestscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendrestscale",
+      "label": "Rest Angle Scale",
+      "type": "Float",
+      "folders": [
+        "Bend"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "help": "The rest angle of the bend constraints will be the original dihedral angle between the triangles.   This scale can be used to increase or decrease this.   Setting to `0` will treat the original configuration as a flat sheet.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dobendstiffnessdropoff": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dobendstiffnessdropoff",
+      "label": "dobendstiffnessfalloff",
+      "type": "Toggle",
+      "folders": [
+        "Bend"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendstiffnessdropoff": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendstiffnessdropoff",
+      "label": "Stiffness Dropoff",
+      "type": "Float",
+      "folders": [
+        "Bend"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 90.0,
+      "help": "The number of degrees away from the rest angle at which the stiffness of the constraint decreases to zero, or increases from zero to full stiffness, depending on the direction of the dropoff.  A __Decreasing__ dropoff means that the stiffness starts at full strength and decreases to zero at the Dropoff degrees from the rest angle.  An __Increasing__ dropoff means the stiffness starts at zero and i",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendstiffnessdropoffdir": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendstiffnessdropoffdir",
+      "label": "bendstiffnessfalloffdir",
+      "type": "Menu",
+      "folders": [
+        "Bend"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dobendstiffnessdropoffmin": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dobendstiffnessdropoffmin",
+      "label": "dobendstiffnessdropoffmin",
+      "type": "Toggle",
+      "folders": [
+        "Bend"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendstiffnessdropoffmin": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendstiffnessdropoffmin",
+      "label": "Min Stiffness",
+      "type": "Float",
+      "folders": [
+        "Bend"
+      ],
+      "default": 0.0,
+      "min": 0.0,
+      "max": 90.0,
+      "help": "If enabled, the minimum stiffness value when calculating __Stiffness Dropoff__.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:domaxbranchangle": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "domaxbranchangle",
+      "label": "domaxbranchangle",
+      "type": "Toggle",
+      "folders": [
+        "Bend"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:maxbranchangle": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "maxbranchangle",
+      "label": "Max Branch Angle",
+      "type": "Float",
+      "folders": [
+        "Bend"
+      ],
+      "default": 10.0,
+      "min": 0.0,
+      "max": 180.0,
+      "help": "When adding torsion-free string bend constraints, they work best when the rest angle is close to straight.  Setting the max branch angle allows something like a net of ropes to only have the bend constraints along the straight ropes, not on the perpendicular sections.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendplasticity": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendplasticity",
+      "label": "Enable Plasticity",
+      "type": "Toggle",
+      "folders": [
+        "Bend"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Plasticity allows an object to flow to a new rest position.  Under sufficient stress, the rest coordinates are blended to the current dynamic coordinates, so the object will retain its new shape.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendplasticthreshold": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendplasticthreshold",
+      "label": "Threshold",
+      "type": "Float",
+      "folders": [
+        "Bend",
+        "Plasticity"
+      ],
+      "default": 10.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "Below this threshold the material will return to its original shape. When deformed past the threshold, it will begin to creep into its new configuration. This is an absolute angle measurement.  Because rest angles are often flat, the idea of a ratio that exists for stretch constraints does not apply to bend constraints.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendplasticthresholdscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendplasticthresholdscalemode",
+      "label": "bendplasticthresholdscalemode",
+      "type": "Menu",
+      "folders": [
+        "Bend",
+        "Plasticity"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendplasticthresholdscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendplasticthresholdscale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Bend",
+        "Plasticity"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single scale slider for the threshold.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendplasticrate": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendplasticrate",
+      "label": "Rate",
+      "type": "Float",
+      "folders": [
+        "Bend",
+        "Plasticity"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "The speed at which the material adopts its new rest angles when it begins to flow.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendplasticratescalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendplasticratescalemode",
+      "label": "bendplasticratescalemode",
+      "type": "Menu",
+      "folders": [
+        "Bend",
+        "Plasticity"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendplasticratescale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendplasticratescale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Bend",
+        "Plasticity"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single scale slider for the plastic rate.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendplastichardening": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendplastichardening",
+      "label": "Hardening",
+      "type": "Float",
+      "folders": [
+        "Bend",
+        "Plasticity"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "help": "Some plastic materials become stiffer after they've undergone deformation. These will have a hardening greater than 1.  Some become softer so will have hardening less than 1.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendplastichardeningscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendplastichardeningscalemode",
+      "label": "bendplastichardeningmode",
+      "type": "Menu",
+      "folders": [
+        "Bend",
+        "Plasticity"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:bendplastichardeningscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "bendplastichardeningscale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Bend",
+        "Plasticity"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single scale slider for plastic hardening.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dobendgrp": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dobendgrp",
+      "label": "dobendgrp",
+      "type": "Toggle",
+      "folders": [
+        "Bend"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:keepuniquebend": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "keepuniquebend",
+      "label": "Keep Unique within Output Group",
+      "type": "Toggle",
+      "folders": [
+        "Bend"
+      ],
+      "default": true,
+      "min": null,
+      "max": null,
+      "help": "Ensures that a particular point can only be constrained once by the constraints in the __Output Group__.  When dynamically creating constraints it can be common to re-create constraints between the same points every frame.  Keeping the points unique within the output group prevents a constant accumulation of constraints.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:dobreaking": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "dobreaking",
+      "label": "Enable Breaking",
+      "type": "Toggle",
+      "folders": [
+        "Breaking"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Constraint primitives can be removed by the solver when sufficient deformation or stress is applied, effectively breaking those constraints.   You can also manually break constraints by deleting them during the solve to gain full control of the timing. Running the simulation first with visualization enabled can be useful to find what are good values for the thresholds.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:breakthreshold": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "breakthreshold",
+      "label": "Threshold",
+      "type": "Float",
+      "folders": [
+        "Breaking"
+      ],
+      "default": 0.1,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "The amount of stress or displacement on a constraint to trigger a break.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:breakscalemode": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "breakscalemode",
+      "label": "breakscalemode",
+      "type": "Menu",
+      "folders": [
+        "Breaking"
+      ],
+      "default": 0,
+      "min": null,
+      "max": null,
+      "help": "",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:breakscale": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "breakscale",
+      "label": "Scale",
+      "type": "Float",
+      "folders": [
+        "Breaking"
+      ],
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "help": "Single slider to scale the threshold.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:breaktypeall": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "breaktypeall",
+      "label": "Type",
+      "type": "Menu",
+      "folders": [
+        "Breaking"
+      ],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "This controls how the solver decides to break weld and hair constraints. None: No automated tests are performed. Stretch Stress: The stretch stress must exceed the threshold. Bend Stress: The bend stress must exceed the threshold. Stretch Distance: The total distance from the goal location and the current location must exceed the threshold. Stretch Ratio: The ratio between the current distance and",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:breaktypestretch": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "breaktypestretch",
+      "label": "Type",
+      "type": "Menu",
+      "folders": [
+        "Breaking"
+      ],
+      "default": 1,
+      "min": null,
+      "max": null,
+      "help": "This controls how the solver decides to break distance constraints. None: No automated tests are performed. Stretch Stress: The stretch stress must exceed the threshold. Stretch Distance: The total distance from the goal location and the current location must exceed the threshold. Stretch Ratio: The ratio between the current distance and the rest distance must exceed the threshold.",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:attribpromote": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "attribpromote",
+      "label": "Promotion Method",
+      "type": "Menu",
+      "folders": [
+        "Attributes"
+      ],
+      "default": 2,
+      "min": null,
+      "max": null,
+      "help": "The scale-by-attribute functions have to apply the possible different scale attribute values on the points involved in the constraint to a single constraint.  This controls how they are blended together. Maximum: The maximum scale factor is used. Minimum: The minimum scale factor is used. Average: The average of the points scale factors is used. Multiply: The scale factors are all multiplied toget",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    },
+    "/obj/SUBJECT/CONSTRAINTS:statictopology": {
+      "node": "/obj/SUBJECT/CONSTRAINTS",
+      "parm": "statictopology",
+      "label": "Static Topology",
+      "type": "Toggle",
+      "folders": [
+        "Attributes"
+      ],
+      "default": false,
+      "min": null,
+      "max": null,
+      "help": "Specify that the constraints created by this node will remain static, i.e. will not slide or be broken, removed, or welded.  This specification allows the solver to make optimizations when graph coloring; therefore it is most effective when a simulation has dynamic constraints that require frequent graph re-coloring.  A common example is static, dense tetrahedral meshes that are connected together",
+      "notes": [],
+      "status": "pending",
+      "reason": "",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+    }
+  },
+  "updated": "2026-09-11 00:58:13"
+}
