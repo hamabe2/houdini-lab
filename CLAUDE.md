@@ -9,6 +9,24 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
 
 日本語で応答する。コード・パス・パラメータ名は英語のまま。
 
+## 現在地（2026-09-11 時点）
+
+**シーンを作り直したところで、本撮りはまだ1本もしていない。**
+
+- `scenes/vellum_cloth.hip` は三角メッシュ（remesh 0.12 / 638三角）+
+  Vellum Configure Cloth と同じ拘束設定 + ビューポート work light。
+  静止画確認まで済み
+- 公開済みの `vellum-cloth-bend.mp4` は**旧シーンのもの。**JSON の値は実効値に
+  直したが記事本文と食い違っているので、**撮り直すまで push しない**
+- `screening.json` に候補 281 件が pending。`maxviscosityiterations` は
+  「差なし」と判定済み（＝候補に戻らない）
+
+**次にやること**: `ledger.py next` で候補を出し、値の刻みを決めて
+`setup_sheet.py` → `screen.py`。採用されたものを `flipbook.py --sweep` で本撮り。
+`bendstiffness` は採用判定済み（34〜37dB）だが段階は未決定。
+
+**未着手**: 判定結果をまとめて承認する仕組み（1件ずつ聞かずに済ませるため）。
+
 ## このプロジェクトの仕組み
 
 ```
@@ -74,7 +92,9 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 #   確認 : http://127.0.0.1:8765/houdini-lab/setup/
 
 # 1フレームだけ確認（カメラやライトの調整用。sweep を回すより圧倒的に速い）
-.venv\Scripts\python.exe tools\preview.py --hip scenes\vellum_cloth.hip --frame 24 --bbox
+.venv\Scripts\python.exe tools\preview.py --hip scenes\vellum_cloth.hip `
+  --camera /obj/CAM_angle --frame 1 --frame 24 --frame 48
+#   照明の候補を見比べる: --look headlight --look threepoint --look dome --look sky
 
 # シーンの作り直し
 & "C:\Program Files\Side Effects Software\Houdini 21.0.729\bin\hython.exe" tools\make_template_hip.py
@@ -329,12 +349,17 @@ Houdini はこの「値 + 指数」の並びが多いので、**振る対象は�
 
 `list_parms.py` が `実効値 = 値 x 10^N` として一覧に出すので、選ぶ時点で気づける。
 vellumconstraints では `stretchstiffness` / `compressstiffness` / `tangentstiffness` /
-`bendstiffness` の4つがこの並び。**`bendstiffnessexp` はこのシーンで -1**
-（`constrainttype=cloth` にした結果で、`make_vellum_cloth_scene.py` は触っていない）。
-つまり公開済みの `vellum-cloth-bend.mp4` の 0,0.1,1,5,10 は
-実効 0,0.01,0.1,0.5,1 を振っていた。
+`bendstiffness` の4つがこの並び。指数は `make_vellum_cloth_scene.py` が
+明示的に固定している（bend は -4 = Configure Cloth と同じ）。
 
-実測（frame 24 / `CAM_angle` / 合成後 PSNR、既定 `exp=10` との差）:
+**公開済みの `vellum-cloth-bend.mp4` は指数 -1 の頃に撮ったもの**で、
+0,0.1,1,5,10 は実効 0,0.01,0.1,0.5,1 を振っていた。JSON の `values` は
+実効値に直したが、**記事本文はまだ入力欄の値のままで食い違っている。**
+シーンを作り直したので撮り直す前提（それまで push しない）。
+
+以下は**旧シーン（四角メッシュ / 旧ライト / bend 指数 -1）での実測**なので、
+新しいシーンでは測り直しが要る。傾向の参考としてのみ残す。
+（frame 24 / `CAM_angle` / 合成後 PSNR、既定 `exp=10` との差）:
 
 | `stretchstiffnessexp` | 既定との差 | | 隣どうしの差 |
 |---|---|---|---|
