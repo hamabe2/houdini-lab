@@ -15,6 +15,7 @@ import sys
 import threading
 import time
 from pathlib import Path
+from urllib.parse import quote, unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -242,7 +243,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         if images:
             cards = "\n".join(
-                f'<figure><img src="{PREFIX}/preview/{p.name}?t={int(p.stat().st_mtime)}" '
+                f'<figure><img src="{PREFIX}/preview/{quote(p.name)}'
+                f'?t={int(p.stat().st_mtime)}" '
                 f'alt="{p.name}">'
                 f"<figcaption>{p.name}"
                 f'<span>{time.strftime("%H:%M:%S", time.localtime(p.stat().st_mtime))}</span>'
@@ -293,6 +295,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_cache_file(config.CACHE_DIR / "preview", name)
 
     def send_cache_file(self, root: Path, name: str) -> None:
+        # **URL の % を戻してから探す。** ブラウザはファイル名の非 ASCII や
+        # 空白をパーセントエンコードして送ってくる。戻さずに探すと
+        # 「画像だけ 404」になり、ページは出るのに絵が出ない状態になる
+        # （静的ファイルは SimpleHTTPRequestHandler が自分で戻すので、
+        # この分岐だけが取りこぼしていた）。
+        name = unquote(name)
         # ディレクトリを抜けられないようファイル名だけを使う
         path = root / Path(name).name
         if not path.is_file():
@@ -333,7 +341,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             blocks = []
             for g in meta["groups"]:
                 cells = "\n".join(
-                    f'<figure><img src="{PREFIX}/setup/{c["img"]}" alt="{c["value"]}">'
+                    f'<figure><img src="{PREFIX}/setup/{quote(c["img"])}" alt="{c["value"]}">'
                     f'<figcaption>{c["value"]}'
                     f'{" <b>既定</b>" if c["value"] == g["default"] else ""}'
                     f"</figcaption></figure>"
