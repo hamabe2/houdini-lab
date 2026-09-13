@@ -22,6 +22,9 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
   （エッジの白い縁と灰色潰れの対処。「カラースキームは背景の色ではなくエッジに効く」）
 - `screening.json`: 281 件 pending / `bendstiffness` は published /
   `maxviscosityiterations` は「差なし」
+- **未 push のコミットが2本ある**（`preview / setup の画像 URL をデコード〜` と
+  `エッジの白い縁と灰色潰れを取る〜`）。push すれば公開サイトの動画が
+  Dark スキームのものに差し替わる。ユーザーの指示待ち
 
 **工程の自動化の度合い**
 
