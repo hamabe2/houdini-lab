@@ -429,6 +429,9 @@ def _run_sheet(job: dict, viewer: hou.SceneViewer) -> list[dict]:
     for probe in job["probes"]:
         parm = _prepare_parm(probe["node"], probe["parm"])
         original = parm.eval()
+        # 「× 10^N」メニューが隣にあるなら、表記に使うのは掛けた後の値。
+        # propose_values.py が実効値で刻みを提案するのに要る。
+        _, mult = effective_values(parm, probe["values"])
 
         for value in probe["values"]:
             done += 1
@@ -460,6 +463,7 @@ def _run_sheet(job: dict, viewer: hou.SceneViewer) -> list[dict]:
                 "default": original,
                 "path": str(pngs[0]),
                 "geo": report,
+                "multiplier": mult,
             })
 
         # 次のパラメータを単独で見るため、必ず元の値へ戻す

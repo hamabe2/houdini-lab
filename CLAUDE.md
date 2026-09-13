@@ -9,23 +9,32 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
 
 日本語で応答する。コード・パス・パラメータ名は英語のまま。
 
-## 現在地（2026-09-11 時点）
+## 現在地（2026-09-13 時点）
 
-**シーンを作り直したところで、本撮りはまだ1本もしていない。**
+**最終目標はループエンジニアリングによる自動生成。**候補出しから公開まで人が
+介在せずに回ることを目指す。現状は**1周を手で通し終えた**ところ。
 
 - `scenes/vellum_cloth.hip` は三角メッシュ（remesh 0.12 / 638三角）+
-  Vellum Configure Cloth と同じ拘束設定 + ビューポート work light。
-  静止画確認まで済み
-- 公開済みの `vellum-cloth-bend.mp4` は**旧シーンのもの。**JSON の値は実効値に
-  直したが記事本文と食い違っているので、**撮り直すまで push しない**
-- `screening.json` に候補 281 件が pending。`maxviscosityiterations` は
-  「差なし」と判定済み（＝候補に戻らない）
+  Vellum Configure Cloth と同じ拘束設定 + ビューポート work light
+- `vellum-cloth-bend.mp4` は**新シーンで撮り直し済み**（`CAM_angle` /
+  実効 0, 1e-4, 1e-3, 1e-2, 10 / 隣どうし 35〜39dB）。記事も実測に書き直した。
+  **まだ push していない**
+- `screening.json`: 281 件 pending / `bendstiffness` は published /
+  `maxviscosityiterations` は「差なし」
 
-**次にやること**: `ledger.py next` で候補を出し、値の刻みを決めて
-`setup_sheet.py` → `screen.py`。採用されたものを `flipbook.py --sweep` で本撮り。
-`bendstiffness` は採用判定済み（34〜37dB）だが段階は未決定。
+**工程の自動化の度合い**
 
-**未着手**: 判定結果をまとめて承認する仕組み（1件ずつ聞かずに済ませるため）。
+| 工程 | |
+|---|---|
+| 候補を積む・出す（`ledger.py`） | 自動 |
+| 振る値の刻みを決める（`propose_values.py`） | 自動 |
+| 篩（`setup_sheet.py`）・判定（`screen.py`） | 自動 |
+| 判定結果の承認 | **人間・1件ずつ**（未着手） |
+| 本撮り（`flipbook.py`）| 手動起動 |
+| JSON / 記事 / push | **手作業** |
+
+**次にやること**: 判定結果をまとめて承認する仕組み（1件ずつ聞かずに済ませる）と、
+`next → propose → sheet → screen` を N件まとめて回すドライバ。
 
 ## このプロジェクトの仕組み
 
@@ -75,6 +84,10 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 .venv\Scripts\python.exe tools\list_parms.py --hip scenes\vellum_cloth.hip --tree /obj
 .venv\Scripts\python.exe tools\list_parms.py --hip scenes\vellum_cloth.hip `
   --node /obj/SUBJECT/SOLVER --filter "iter|damp" --doc
+
+# 振る値の刻みを決める（絵が飽和する端を先に探す。端が無ければ自分で梯子を伸ばす）
+.venv\Scripts\python.exe tools\propose_values.py --hip scenes\vellum_cloth.hip `
+  --node /obj/SUBJECT/CONSTRAINTS --parm bendstiffness --camera /obj/CAM_angle
 
 # 検証の台帳（screening.json）。何を調べ、何を落とし、なぜかを残す
 .venv\Scripts\python.exe tools\ledger.py add --hip scenes\vellum_cloth.hip --node /obj/SUBJECT/SOLVER
@@ -352,10 +365,7 @@ vellumconstraints では `stretchstiffness` / `compressstiffness` / `tangentstif
 `bendstiffness` の4つがこの並び。指数は `make_vellum_cloth_scene.py` が
 明示的に固定している（bend は -4 = Configure Cloth と同じ）。
 
-**公開済みの `vellum-cloth-bend.mp4` は指数 -1 の頃に撮ったもの**で、
-0,0.1,1,5,10 は実効 0,0.01,0.1,0.5,1 を振っていた。JSON の `values` は
-実効値に直したが、**記事本文はまだ入力欄の値のままで食い違っている。**
-シーンを作り直したので撮り直す前提（それまで push しない）。
+`vellum-cloth-bend.mp4` は新シーンで撮り直し済み（2026-09-13）。
 
 以下は**旧シーン（四角メッシュ / 旧ライト / bend 指数 -1）での実測**なので、
 新しいシーンでは測り直しが要る。傾向の参考としてのみ残す。
@@ -378,14 +388,50 @@ vellumconstraints では `stretchstiffness` / `compressstiffness` / `tangentstif
 `niter`（5〜100 で 24〜32dB）と `veldamping`（0〜2 で 28〜31dB）も採用見込みだが
 未撮影。
 
+### 段階を決める前に、絵が飽和する端を探す
+
+**`screen.py` を通しただけでは「有効域のごく一部を5段階に切った動画」が作れて
+しまう。**判定は「既定値と差があるか」しか見ないので、差さえ出ていれば通る。
+
+実際に踏んだ: `bendstiffness` を 0.1〜100（実効 1e-5〜1e-2）で篩にかけたら
+隣どうし 34〜37dB で「採用・段階に無駄なし」と通った。本撮りしたら5段階が
+見分けられなかった。**実測した有効域は 0〜100000（実効 0〜10）で、撮っていたのは
+その 0.1% 以下だった。**
+
+`propose_values.py` が既定値から桁を上下に振って端を探す
+（frame 24 / `CAM_angle` / 合成後 PSNR、隣どうし）:
+
+| 入力欄 | 0 | 1e-4 | 1e-3 | 1e-2 | 0.1 | 1 | 10 | 100 | 1000 | 1e4 | 1e5 | 1e6 | 1e7 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 隣との差 dB | 一致 | 59.3 | 48.1 | 40.9 | 35.4 | 36.1 | 36.2 | 37.0 | 37.7 | 46.5 | 60.1 | 68.9 | |
+
+**下は 1e-4 以下が `0` と完全一致、上は 1e5 以上が頭打ち。**UI スライダーの
+範囲（0〜10）はまるで当てにならない。
+
+この経路で決まっていること:
+
+- **端が見つからない側は梯子を自分で伸ばす**（`--max-rounds` 回まで）。
+  人が `--decades` を指定し直すのではループにならない
+- **飽和帯の代表は1段だけ採る。**どちらの端を採るかは梯子が止まった理由で決める。
+  パラメータの下限や `--cap` で止まったならその値そのもの（`bendstiffness = 0`
+  ＝曲げ拘束なしは読者に意味がある端）。撮り切っただけなら**最初に飽和した段**
+  （外端を採ると、実効 10 で頭打ちなのに実効 1000 を並べる提案になる）
+- **刻みは値の対数ではなく「見た目の差」で等間隔にする。**隣どうしの PSNR を
+  `10^(-PSNR/20)` で距離に直して積み上げ、その軸で等間隔に選ぶ。値の対数で
+  切ると、視覚差が詰まっている帯に枠を使う（実測: `0` と `0.01` が 48.8dB
+  ＝ほとんど同じ絵なのに別々の段階として提案された）
+- **段階は撮った梯子の段から選ぶ。**新しい値を作らない。梯子は既定値の倍数で
+  できているので既定値が必ず候補にあり、どの段も実測済みの値になる
+
 **採用可否は数値で決める。目視で決めない。**`screen.py` が PSNR とアトリビュートで判定する。
 
 ```
-ledger.py add    ノードの全パラメータを候補として積む（既に判定済みのものは触らない）
-ledger.py next   次に調べる候補を出す
-setup_sheet.py   候補を1フレームずつ撮る
-screen.py        PSNR で判定 → screening.json に書き戻す
-flipbook.py      採用されたものだけ本撮り
+ledger.py add       ノードの全パラメータを候補として積む（既に判定済みのものは触らない）
+ledger.py next      次に調べる候補を出す
+propose_values.py   端を探して振る値の刻みを決める → 台帳に proposal を残す
+setup_sheet.py      候補を1フレームずつ撮る
+screen.py           PSNR で判定 → screening.json に書き戻す
+flipbook.py         採用されたものだけ本撮り
 ```
 
 - **差なし** = 既定値との差が 50dB 以上（＝ほぼ同じ絵）。振る価値がない
