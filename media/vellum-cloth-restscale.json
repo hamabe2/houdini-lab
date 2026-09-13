@@ -1,0 +1,22 @@
+{
+  "id": "vellum-cloth-restscale",
+  "src": "vellum-cloth-restscale.mp4",
+  "parm": "bendrestscale",
+  "label": "Rest Angle Scale",
+  "node": "/obj/SUBJECT/CONSTRAINTS",
+  "values": [
+    1.0,
+    100.0,
+    1000.0,
+    10000.0,
+    100000.0
+  ],
+  "raw_values": null,
+  "multiplier": null,
+  "default_index": 0,
+  "fps": 24,
+  "frames_per_segment": 48,
+  "width": 960,
+  "height": 540,
+  "camera": "CAM_angle"
+}

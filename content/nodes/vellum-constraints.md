@@ -4,7 +4,7 @@ node: vellumconstraints
 context: SOP
 houdini_version: "21.0.729"
 tags: [vellum, cloth]
-updated: 2026-09-13
+updated: 2026-09-14
 description: Vellum Constraints の各パラメータを、値を段階的に変えた比較動画で確認する。
 ---
 
@@ -27,6 +27,41 @@ description: Vellum Constraints の各パラメータを、値を段階的に変
 
 | | |
 |---|---|
+| Stretch / Compression Stiffness | 実効 1e10 / 1e3 |
+| Damping Ratio | stretch 0.001 / bend 0.01 |
+| Substeps / Constraint Iterations | 3 / 100 |
+| 質量 / 厚み | Calculate Varying (density 0.1) / Calculate Uniform (Edge Length Scale 0.25) |
+| Gravity / Velocity Damping | -9.80665 / 0 |
+
+## bendrestscale
+
+曲げ拘束の休息角を何倍にするか。UI では **Bend > Rest Angle Scale**（範囲の目安 0〜2）。
+
+:::compare vellum-cloth-restscale
+
+- **UI の範囲では絵が変わらない。** 既定 `1` に対して `100` でも 57.8dB（＝ほぼ同一）。
+  公式の説明どおり、休息角は「三角形どうしの元の二面角」。**この布は実測で
+  二面角が最大 0.000001 度＝完全に平らなので、何倍しても 0 のまま**
+  （remesh 後の 638 三角 / 内部エッジ 909 本を実測）
+- **つまり平らな布から始める限り、このパラメータは触っても無駄。**
+  効かせたいなら、最初から折り目やカーブの付いたメッシュを入力にする
+- **絵が動き始めるのは `1000` から**（既定との差 43.0dB → `10000` で 35.9dB →
+  `100000` で 28.6dB）。ただし **`100000` 倍しても休息角は最大 0.12 度**にしかならない。
+  **0.1 度の違いが 48 フレームのあいだに育っていく**のがこの動画で見えているもので、
+  休息角そのものが絵を作っているのではない
+- **`100000` は全面が皺になり、下端が房のように割れる。** それでも sim は壊れていない
+  （速度 p95 は全段 2.5 で揃っている）
+- **`1e8` まで上げると破綻する**（休息角が最大 100 度に届き、速度 p95 が中央値の 39 倍）。
+  動画には入れていない
+- **UI の範囲外を並べている。** 0〜2 では差が出ないため。Houdini の範囲表示は
+  「よく使う辺り」でしかなく、上限ではない
+
+固定値:
+
+| | |
+|---|---|
+| Bend Type | Angle（二面角を拘束する） |
+| Bend Stiffness | 実効 0.0001 |
 | Stretch / Compression Stiffness | 実効 1e10 / 1e3 |
 | Damping Ratio | stretch 0.001 / bend 0.01 |
 | Substeps / Constraint Iterations | 3 / 100 |
