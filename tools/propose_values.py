@@ -528,6 +528,8 @@ def record_proposal(result: dict) -> None:
         "open_low": result["span"]["open_low"],
         "open_high": result["span"]["open_high"],
         "frame": result["frame"],
+        # 承認後の本撮りで同じ画角を使うため（題材によって変わる）。
+        "camera": result["camera"],
         "same_db": result["same_db"],
         "proposed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
     }

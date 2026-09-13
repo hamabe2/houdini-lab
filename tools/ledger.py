@@ -16,9 +16,15 @@
 
   pending   候補に挙げただけ。まだ撮っていない
   screened  setup シートを撮って screen.py が判定した（採用 / 差なし / 破綻）
+  approved  人が「本撮りしてよい」と決めた
+  rejected  人が「撮らない」と決めた（理由つき）
   published 本撮りして公開した
 
 `screen.py` が判定するたびに、その結果をここへ書き戻す。
+
+**判定（verdict）と決定（status）は別物。** verdict は機械が数値で出すもので、
+「絵が変わるか」しか見ていない。撮る価値があるかは人が決める。その境目が
+approved / rejected で、`tools/review.py` と `/review/` がその入力口。
 """
 
 from __future__ import annotations
@@ -201,6 +207,69 @@ def pending(
     return rows
 
 
+def is_awaiting(entry: dict) -> bool:
+    """人の決定を待っているか。
+
+    **「差なし」だけは人に見せない。**既定値と絵が変わらないことは数値で
+    決着がついていて、人が覆す材料が無い。逆に**「破綻」は見せる。**
+    片端に破綻する値を入れるのは意図的な選び方（破綻を見せることが理解に
+    つながる）なので、機械に捨てさせない。
+    """
+    return entry.get("status") == "screened" and entry.get("verdict") != "差なし"
+
+
+def awaiting(data: dict | None = None) -> list[dict]:
+    """承認待ちの候補を返す。"""
+    rows = [e for e in (data or load()).get("entries", {}).values() if is_awaiting(e)]
+    rows.sort(key=lambda e: (e.get("node", ""), e.get("parm", "")))
+    return rows
+
+
+def decide(node: str, parm: str, status: str, note: str = "") -> dict:
+    """人の決定を台帳に記録する。
+
+    **撮る値をここで凍らせる。** `propose_values.py` を回し直すと提案は
+    変わりうるが、承認したのはそのとき見た5枚の絵。後で本撮りする値が
+    黙って変わらないよう、決めた時点の値を `approved_values` に写す。
+    """
+    if status not in ("approved", "rejected"):
+        raise ValueError(f"status が不正です: {status}")
+
+    data = load()
+    entry = data.get("entries", {}).get(key_of(node, parm))
+    if entry is None:
+        raise KeyError(f"台帳にありません: {key_of(node, parm)}")
+
+    entry["status"] = status
+    entry["decision_note"] = note
+    entry["decided_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    if status == "approved":
+        proposal = entry.get("proposal") or {}
+        entry["approved_values"] = {
+            "values": entry.get("values") or proposal.get("values"),
+            "display_values": proposal.get("display_values"),
+            "default_index": proposal.get("default_index", 0),
+            "label": entry.get("label") or parm,
+        }
+    save(data)
+    return entry
+
+
+def resolve(parm: str, node: str | None = None) -> tuple[str, str]:
+    """`--parm` だけで指せるようにする（同名が複数あるときだけ --node を要求）。"""
+    entries = load().get("entries", {})
+    hits = [
+        e for e in entries.values()
+        if e.get("parm") == parm and (node is None or e.get("node") == node)
+    ]
+    if not hits:
+        raise SystemExit(f"台帳にありません: {parm}" + (f"（{node}）" if node else ""))
+    if len(hits) > 1:
+        nodes = ", ".join(sorted(e["node"] for e in hits))
+        raise SystemExit(f"{parm} は複数のノードにあります。--node で指定してください: {nodes}")
+    return hits[0]["node"], hits[0]["parm"]
+
+
 def record_error(node: str, parm: str, message: str) -> None:
     """撮影が失敗したことを残す。
 
@@ -291,6 +360,58 @@ def cmd_add(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_awaiting(args: argparse.Namespace) -> int:
+    """人の決定を待っている候補を出す。"""
+    rows = awaiting()
+    if not rows:
+        print("承認待ちはありません。"
+              "（`screen_loop.py` を回すと溜まります）")
+        return 0
+
+    print(f"承認待ち {len(rows)} 件:")
+    for entry in rows:
+        proposal = entry.get("proposal") or {}
+        display = proposal.get("display_values") or entry.get("values") or []
+        print(f"\n  {entry['parm']}  （{entry.get('label', '')}）  [{entry.get('verdict', '')}]")
+        print(f"      {entry['node']}")
+        print(f"      {entry.get('reason', '')}")
+        if display:
+            print(f"      実効値 {', '.join(str(v) for v in display)}")
+    print(f"\n  絵を見て決める: {config.BASE_URL}/review/")
+    print("  コマンドで決める: ledger.py approve --parm <名前>  /  reject --parm <名前> --why \"...\"")
+    return 0
+
+
+def cmd_decide(args: argparse.Namespace) -> int:
+    """まとめて承認・却下する。"""
+    status = args.decision
+    if args.all:
+        targets = [(e["node"], e["parm"]) for e in awaiting()]
+        if not targets:
+            print("承認待ちはありません。")
+            return 0
+    else:
+        if not args.parm:
+            raise SystemExit("--parm か --all を指定してください")
+        names = [p.strip() for p in ",".join(args.parm).split(",") if p.strip()]
+        targets = [resolve(name, args.node) for name in names]
+
+    # **却下には理由を要る。**「なぜ落としたか」が残っていないと、次に
+    # 同じ候補を見たときに判断をやり直すことになる（台帳の存在理由そのもの）。
+    if status == "rejected" and not args.why:
+        raise SystemExit("却下には --why で理由を書いてください")
+
+    for node, parm in targets:
+        decide(node, parm, status, args.why or "")
+        print(f"  {'承認' if status == 'approved' else '却下'}: {node} / {parm}")
+
+    if status == "rejected":
+        import review
+        review.prune()
+    print(f"{len(targets)} 件を {status} にしました")
+    return 0
+
+
 def cmd_publish(args: argparse.Namespace) -> int:
     """公開したことを記録する。"""
     data = load()
@@ -316,12 +437,35 @@ def main() -> int:
     p_add.set_defaults(func=cmd_add)
 
     p_list = sub.add_parser("list", help="台帳の中身を表示する")
-    p_list.add_argument("--status", choices=("pending", "screened", "published"))
+    p_list.add_argument(
+        "--status",
+        choices=("pending", "screened", "approved", "rejected", "published", "無効"),
+    )
     p_list.set_defaults(func=cmd_list)
 
     p_next = sub.add_parser("next", help="次に調べる候補を出す")
     p_next.add_argument("--count", type=int, default=3)
     p_next.set_defaults(func=cmd_next)
+
+    p_await = sub.add_parser("awaiting", help="人の決定を待っている候補を出す")
+    p_await.set_defaults(func=cmd_awaiting)
+
+    for name, help_text in (
+        ("approve", "本撮りしてよいと決める"),
+        ("reject", "撮らないと決める（--why で理由を残す）"),
+    ):
+        p = sub.add_parser(name, help=help_text)
+        p.add_argument("--parm", action="append",
+                       help="パラメータ名。カンマ区切りと複数指定ができる")
+        p.add_argument("--node", help="同名が複数のノードにあるときだけ必要")
+        p.add_argument("--all", action="store_true", help="承認待ちを全部")
+        p.add_argument("--why", default="", help="決めた理由")
+        # dest は cmd と別にする。サブパーサ名（approve）と記録する状態
+        # （approved）が違ううえ、argparse がどちらで上書きするかに
+        # 頼りたくない。
+        p.set_defaults(
+            func=cmd_decide, decision="approved" if name == "approve" else "rejected",
+        )
 
     p_pub = sub.add_parser("publish", help="公開したことを記録する")
     p_pub.add_argument("--node", required=True)

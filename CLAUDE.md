@@ -34,11 +34,12 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
 | 振る値の刻みを決める（`propose_values.py`） | 自動 |
 | 篩（`setup_sheet.py`）・判定（`screen.py`） | 自動 |
 | 上3つを N件まとめて回す（`screen_loop.py`） | 自動 |
-| 判定結果の承認 | **人間・1件ずつ**（未着手） |
+| 判定結果の承認（`/review/` ・ `ledger.py approve`） | **人間・まとめて1回** |
 | 本撮り（`flipbook.py`）| 手動起動 |
 | JSON / 記事 / push | **手作業** |
 
-**次にやること**: 判定結果をまとめて承認する仕組み（1件ずつ聞かずに済ませる）。
+**次にやること**: 承認済みをまとめて本撮りするドライバ（`flipbook.py --sweep` を
+承認済みのぶんだけ組み立てて1セッションで回す）と、JSON / 記事の生成。
 
 ## このプロジェクトの仕組み
 
@@ -98,6 +99,14 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
   --count 3 --camera /obj/CAM_angle
 #   --dry-run で「何を回すか」だけ確認できる（Houdini を起動しない）
 
+# 判定結果をまとめて承認する（絵はブラウザで見る）
+.venv\Scripts\python.exe tools\review.py              # 承認待ちの一覧
+#   絵を見て決める : http://127.0.0.1:8765/houdini-lab/review/
+.venv\Scripts\python.exe tools\ledger.py approve --parm niter,veldamping
+.venv\Scripts\python.exe tools\ledger.py reject --parm adhesion --why "この構成では効かない"
+.venv\Scripts\python.exe tools\ledger.py approve --all
+.venv\Scripts\python.exe tools\review.py --approved   # 本撮りのコマンドを出す
+
 # 検証の台帳（screening.json）。何を調べ、何を落とし、なぜかを残す
 .venv\Scripts\python.exe tools\ledger.py add --hip scenes\vellum_cloth.hip --node /obj/SUBJECT/SOLVER
 .venv\Scripts\python.exe tools\ledger.py next --count 3   # 次に調べる候補
@@ -126,6 +135,7 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 .venv\Scripts\python.exe serve.py
 #   サイト     : http://127.0.0.1:8765/houdini-lab/
 #   プレビュー : http://127.0.0.1:8765/houdini-lab/preview/
+#   承認       : http://127.0.0.1:8765/houdini-lab/review/
 .venv\Scripts\python.exe build.py
 ```
 
@@ -483,8 +493,33 @@ propose_values.py   端を探して振る値の刻みを決める → 台帳に 
 setup_sheet.py      候補を1フレームずつ撮る
 screen.py           PSNR で判定 → screening.json に書き戻す
 screen_loop.py      上を N 件ぶん自動で回す（人が介在するのは本撮りの判断だけ）
-flipbook.py         採用されたものだけ本撮り
+/review/            承認待ちを絵で並べて、まとめて承認・却下する
+review.py           承認待ち / 承認済み（本撮りのコマンド付き）を端末で見る
+flipbook.py         承認されたものだけ本撮り
 ```
+
+**判定（`verdict`）と決定（`status`）は別物。** verdict は機械が数値で出すもので
+「既定値と絵が変わるか」しか見ていない。撮る価値があるかは人が決める。
+
+```
+pending → screened ─┬→ approved  → published    本撮りしてよい
+                    └→ rejected                 撮らない（--why で理由を残す）
+```
+
+- **「差なし」は人に見せない**（数値で決着がついていて覆す材料がない）。
+  **「破綻」は見せる**。片端に破綻する値を入れるのは意図的な選び方なので、
+  機械に捨てさせない（`ledger.is_awaiting()`）
+- **却下には理由が要る。** 画面も CLI も理由なしでは通さない。なぜ落としたかが
+  残っていないと、次に同じ候補を見たとき判断をやり直すことになる
+- **承認した時点の値を `approved_values` に凍らせる。** `propose_values.py` を
+  回し直すと提案は変わりうるが、承認したのはそのとき見た5枚の絵
+- **撮影中は承認しない。** 台帳はファイル1本を丸ごと読み書きするので、
+  `screen_loop.py` が回っている最中に `/review/` で決めると、後から保存した
+  ほうが勝って片方が消える（ロックは入れていない）
+- **承認待ちの絵は `tools/_cache/review/` に退避する。** 判定に使った
+  `tools/_cache/setup/` は次の run で丸ごと消える（`write_sheet()` が `rmtree`）。
+  承認は撮影と同じ速さでは進まないので、置いたままだと
+  「判定は残っているのに絵が無い」状態になる
 
 `screen_loop.py` の要点:
 

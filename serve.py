@@ -14,13 +14,17 @@ import socketserver
 import sys
 import threading
 import time
+from html import escape as esc
 from pathlib import Path
 from urllib.parse import quote, unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
 
 import build as builder  # noqa: E402
 import config  # noqa: E402
+import ledger  # noqa: E402
+import review  # noqa: E402
 
 PORT = 8765
 WATCH = ["content", "templates", "assets", "media", "config.py", "build.py"]
@@ -169,6 +173,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_cache_file(
                 config.CACHE_DIR / "setup",
                 self.path[len(f"{PREFIX}/setup/"):].split("?")[0],
+            )
+            return
+
+        # screen.py の判定を人が承認する画面。**絵を見ている場所でそのまま
+        # 決められるようにする。**判断材料（絵・有効域・dB）と入力口が
+        # 離れていると、結局1件ずつ端末とブラウザを往復することになる。
+        if self.path.split("?")[0].rstrip("/") == f"{PREFIX}/review".rstrip("/"):
+            self.send_review_index()
+            return
+        if self.path.startswith(f"{PREFIX}/review/"):
+            self.send_cache_file(
+                review.REVIEW_DIR,
+                self.path[len(f"{PREFIX}/review/"):].split("?")[0],
             )
             return
 
@@ -391,6 +408,195 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    # --- 承認 ---------------------------------------------------------------
+
+    def send_review_index(self) -> None:
+        """screen.py の判定を人が承認する画面。
+
+        **まとめて決めるための画面。** 1件ずつ聞かずに済ませる条件は、
+        判断材料（絵・有効域・隣どうしの dB）が1画面に揃っていることと、
+        決定をまとめて1回で送れること。
+
+        `/setup/` と違って **`screening.json` を書き換える**ので、
+        これはローカル専用の口。公開されるのは `site/` の中身だけで、
+        この画面は `serve.py` が動いているときにしか存在しない。
+        """
+        rows = review.awaiting()
+        if not rows:
+            body = (
+                '<p class="empty">承認待ちはありません。<br>'
+                "<code>python tools/screen_loop.py --hip scenes/vellum_cloth.hip "
+                "--count 5 --camera /obj/CAM_angle</code><br>"
+                "を回すと、ここに溜まります。</p>"
+            )
+        else:
+            blocks = []
+            for row in rows:
+                proposal = row.get("proposal") or {}
+                rng = proposal.get("range") or []
+                figures = []
+                for img in row["images"]:
+                    caption = esc(str(img["display"]))
+                    if img["is_default"]:
+                        caption += " <b>既定</b>"
+                    if img["broken"]:
+                        caption += f' <em>{esc(img["broken"])}</em>'
+                    figures.append(
+                        f'<figure><img src="{PREFIX}/review/{quote(img["name"])}" '
+                        f'alt="{esc(str(img["value"]))}">'
+                        f"<figcaption>{caption}</figcaption></figure>"
+                    )
+                cells = "\n".join(figures) or (
+                    '<p class="empty">絵がありません'
+                    "（screen_loop.py 経由で撮ると残ります）</p>"
+                )
+
+                key = esc(row["key"])
+                extra = []
+                if len(rng) == 2:
+                    extra.append(f"有効域 {rng[0]} 〜 {rng[1]}")
+                if proposal.get("open_high") or proposal.get("open_low"):
+                    extra.append("<b>端が見つかっていない</b>")
+                blocks.append(
+                    f'<section data-key="{key}">'
+                    f'<h2>{esc(row["parm"])}'
+                    f'<span class="verdict">{esc(row.get("verdict", ""))}</span></h2>'
+                    f'<p class="node">{esc(row.get("label", ""))} &middot; {esc(row["node"])}'
+                    f'{" &middot; " + " &middot; ".join(extra) if extra else ""}</p>'
+                    f'<p class="node">{esc(row.get("reason", ""))}</p>'
+                    f'<div class="row">{cells}</div>'
+                    f'<div class="decide">'
+                    f'<label><input type="radio" name="{key}" value="hold" checked>保留</label>'
+                    f'<label><input type="radio" name="{key}" value="approved">承認</label>'
+                    f'<label><input type="radio" name="{key}" value="rejected">却下</label>'
+                    f'<input type="text" class="why" placeholder="理由（却下には必須）">'
+                    f"</div></section>"
+                )
+            body = "\n".join(blocks)
+
+        html_text = f"""<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>承認 | Houdini Lab</title>
+<style>
+  body {{ margin:0; padding:1.5rem 1.5rem 5rem; background:#12141a; color:#e6e8eb;
+         font-family:system-ui,"Segoe UI","Yu Gothic UI",sans-serif; }}
+  h1 {{ font-size:1.05rem; margin:0 0 .3rem; }}
+  h2 {{ font-size:.95rem; margin:0 0 .2rem; font-family:ui-monospace,monospace; }}
+  .hint, .node {{ color:#9aa0a6; font-size:.8rem; margin:0 0 1rem; }}
+  .node {{ margin:0 0 .4rem; }}
+  a {{ color:#6ea8fe; }}
+  section {{ margin:0 0 2rem; border-top:1px solid #2a2e35; padding-top:1rem; }}
+  .verdict {{ margin-left:.6rem; font-family:system-ui; font-size:.75rem;
+              color:#0d0f14; background:#9aa0a6; border-radius:99px; padding:.1rem .5rem; }}
+  .row {{ display:flex; gap:.75rem; overflow-x:auto; padding-bottom:.4rem; }}
+  figure {{ margin:0; flex:0 0 auto; }}
+  /* 画像は合成済みだが、地色は動画と揃えておく。 */
+  img {{ display:block; width:260px; border-radius:6px;
+        background:{config.VIDEO_BG.replace("0x", "#")}; border:1px solid #2a2e35; }}
+  figcaption {{ font-size:.78rem; color:#9aa0a6; margin-top:.3rem;
+                font-variant-numeric:tabular-nums; }}
+  figcaption b {{ color:#e6e8eb; font-weight:600; }}
+  figcaption em {{ color:#f0a35e; font-style:normal; }}
+  .decide {{ display:flex; gap:1rem; align-items:center; margin-top:.6rem;
+             font-size:.85rem; flex-wrap:wrap; }}
+  .decide label {{ display:flex; gap:.3rem; align-items:center; cursor:pointer; }}
+  .why {{ flex:1 1 18rem; background:#1b1e25; color:#e6e8eb;
+          border:1px solid #2a2e35; border-radius:5px; padding:.35rem .5rem; }}
+  code {{ background:#22262d; padding:.12em .4em; border-radius:4px; }}
+  .empty {{ color:#9aa0a6; line-height:2; }}
+  .bar {{ position:fixed; left:0; right:0; bottom:0; padding:.7rem 1.5rem;
+          background:#191c22; border-top:1px solid #2a2e35; display:flex;
+          gap:1rem; align-items:center; }}
+  button {{ background:#2f6feb; color:#fff; border:0; border-radius:6px;
+            padding:.45rem 1.1rem; font-size:.9rem; cursor:pointer; }}
+  button:disabled {{ background:#2a2e35; color:#6b7280; cursor:default; }}
+  #status {{ color:#9aa0a6; font-size:.82rem; }}
+</style></head><body>
+<h1>承認</h1>
+<p class="hint">承認待ち {len(rows)} 件 &middot; <a href="{PREFIX}/setup/">セットアップ</a>
+&middot; <a href="{PREFIX}/">サイト</a></p>
+{body}
+<div class="bar">
+  <button id="send">決定を送る</button>
+  <span id="status">保留のままのものは何も変わりません。</span>
+</div>
+<script>
+document.getElementById("send").addEventListener("click", async (ev) => {{
+  const decisions = [];
+  for (const section of document.querySelectorAll("section[data-key]")) {{
+    const picked = section.querySelector("input[type=radio]:checked").value;
+    if (picked === "hold") continue;
+    const note = section.querySelector(".why").value.trim();
+    if (picked === "rejected" && !note) {{
+      document.getElementById("status").textContent =
+        "却下には理由が要ります: " + section.dataset.key;
+      return;
+    }}
+    decisions.push({{ key: section.dataset.key, status: picked, note: note }});
+  }}
+  if (!decisions.length) {{
+    document.getElementById("status").textContent = "決まっているものがありません。";
+    return;
+  }}
+  ev.target.disabled = true;
+  document.getElementById("status").textContent = "送っています…";
+  try {{
+    const r = await fetch("{PREFIX}/review/decide", {{
+      method: "POST",
+      headers: {{ "Content-Type": "application/json" }},
+      body: JSON.stringify({{ decisions }}),
+    }});
+    const out = await r.json();
+    if (!r.ok) throw new Error(out.error || r.status);
+    location.reload();
+  }} catch (e) {{
+    ev.target.disabled = false;
+    document.getElementById("status").textContent = "失敗しました: " + e.message;
+  }}
+}});
+</script>
+</body></html>"""
+
+        data = html_text.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def do_POST(self):
+        """承認画面からの決定を受ける。**ローカル専用の書き込み口。**"""
+        if self.path.split("?")[0].rstrip("/") != f"{PREFIX}/review/decide":
+            self.send_error(404, "not found")
+            return
+
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            payload = json.loads(self.rfile.read(length) or b"{}")
+            decisions = payload.get("decisions") or []
+            done = 0
+            for item in decisions:
+                node, _, parm = str(item["key"]).rpartition(":")
+                status, note = item["status"], (item.get("note") or "").strip()
+                if status == "rejected" and not note:
+                    raise ValueError(f"却下には理由が要ります: {item['key']}")
+                ledger.decide(node, parm, status, note)
+                done += 1
+            # 却下したぶんの絵は残しておく理由がない。
+            review.prune()
+            self.reply_json(200, {"ok": True, "count": done})
+        except Exception as exc:
+            self.reply_json(400, {"ok": False, "error": f"{type(exc).__name__}: {exc}"})
+
+    def reply_json(self, code: int, payload: dict) -> None:
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def send_head(self):
         """HTML にはリロード用スクリプトを差し込み、それ以外は Range に応じる。"""
         path = self.translate_path(self.path)
@@ -430,6 +636,7 @@ def main() -> int:
     with Server(("127.0.0.1", PORT), Handler) as httpd:
         print(f"サイト     : http://127.0.0.1:{PORT}{PREFIX}/")
         print(f"プレビュー : http://127.0.0.1:{PORT}{PREFIX}/preview/")
+        print(f"承認       : http://127.0.0.1:{PORT}{PREFIX}/review/")
         print("(Ctrl+C で終了)")
         try:
             httpd.serve_forever()

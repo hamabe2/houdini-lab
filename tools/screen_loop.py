@@ -28,8 +28,10 @@
 - **Toggle / メニュー。** 梯子は既定値に 10^k を掛けて作るので、数値でないと
   伸ばせない。候補としては台帳に残す（0/1 を並べる価値はある）が、ここでは
   飛ばす。`ledger.LADDER_TYPES` がその線引き。
-- **本撮りと公開。** 採用されたものの `flipbook.py` コマンドは最後に出すが、
-  実行はしない。sim が長いうえ、撮る価値があるかの最終判断は人が持つ。
+- **撮る価値があるかの判断。** 判定（verdict）は「絵が変わるか」しか見ていない。
+  採用されたものは `screened` のまま承認待ちに積み、`/review/` か
+  `ledger.py approve` で人が決める。本撮りのコマンドはそのあと
+  `review.py --approved` が出す。
 """
 
 from __future__ import annotations
@@ -46,9 +48,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config  # noqa: E402
 import ledger  # noqa: E402
 import propose_values  # noqa: E402
+import review  # noqa: E402
 import screen  # noqa: E402
 from flipbook import DEFAULT_HIDDEN  # noqa: E402
-from propose_values import DECADES, fmt  # noqa: E402
+from propose_values import DECADES  # noqa: E402
 from setup_sheet import SHEET_DIR, write_sheet  # noqa: E402
 
 RUN_DIR = config.CACHE_DIR / "shots" / "_loop"
@@ -184,6 +187,13 @@ def main() -> int:
             # 載っているが、それらは既に表示済み。
             screen.print_group(judged, picked_cells)
             done.append(judged)
+
+            # **人の決定を待つものは絵を退避する。** setup シートは次の run で
+            # 丸ごと消えるので、置いたままだと「判定は残っているのに絵が無い」
+            # 状態になる。承認は撮影と同じ速さでは進まない。
+            entry = ledger.load()["entries"][ledger.key_of(node, parm)]
+            if ledger.is_awaiting(entry):
+                review.keep(picked_cells, node, parm)
         print(f"  ここまで {elapsed(one)}")
 
     print(f"\n=== {len(picked)} 件 / {elapsed(started)} ===")
@@ -192,23 +202,15 @@ def main() -> int:
     for entry, message in failed:
         print(f"  [失敗          ] {entry['parm']}  {message.splitlines()[0]}")
 
-    print(f"\n  絵の確認: {config.BASE_URL}/setup/  （serve.py を起動しておくこと）")
-    print(f"  台帳: {ledger.LEDGER}")
+    print(f"\n  台帳: {ledger.LEDGER}")
 
-    adopted = [r for r in done if r["verdict"].startswith("採用")]
-    if adopted:
-        print(f"\n採用 {len(adopted)} 件。本撮りするならこれ:")
-        rel = hip.relative_to(config.ROOT) if hip.is_relative_to(config.ROOT) else hip
-        for result in adopted:
-            entry = ledger.load()["entries"][ledger.key_of(result["node"], result["parm"])]
-            proposal = entry.get("proposal") or {}
-            values = ",".join(fmt(float(v)) for v in result["values"])
-            print(f"\n  .venv\\Scripts\\python.exe tools\\flipbook.py --hip {rel} `")
-            print(f"    --node {result['node']} --parm {result['parm']} `")
-            print(f"    --values {values} --frames 1-48 `")
-            print(f"    --out <id> --label \"{entry.get('label', result['parm'])}\" "
-                  f"--default-index {proposal.get('default_index', 0)} "
-                  f"--camera {args.camera}")
+    # **本撮りのコマンドはここでは出さない。** 撮る価値があるかは人が決める
+    # 工程で、その入力口は /review/（と ledger.py approve）。
+    waiting = ledger.awaiting()
+    if waiting:
+        print(f"\n承認待ち {len(waiting)} 件。絵を見て決める:")
+        print(f"  {config.BASE_URL}/review/  （serve.py を起動しておくこと）")
+        print("  まとめて承認するなら: .venv\\Scripts\\python.exe tools\\ledger.py approve --all")
     return 0 if not failed else 1
 
 

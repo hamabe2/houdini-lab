@@ -4579,9 +4579,84 @@
       "max": 1.0,
       "help": "Stiff constraints tend to vibrate or jitter unacceptably.   Damping reduces this by bleeding energy when evaluating the constraint.  Too much damping can prevent the constraint from being satisfied, however.   Values less than 1 should be used.",
       "notes": [],
-      "status": "pending",
-      "reason": "",
-      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+      "status": "screened",
+      "reason": "既定値との差 37.5〜46.5 dB",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
+      "proposal": {
+        "values": [
+          0.0,
+          0.001,
+          0.01,
+          0.1,
+          1.0
+        ],
+        "display_values": [
+          0.0,
+          0.001,
+          0.01,
+          0.1,
+          1.0
+        ],
+        "default_index": 2,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "ladder": [
+          0.0,
+          1e-06,
+          1e-05,
+          0.0001,
+          0.001,
+          0.01,
+          0.1,
+          1.0,
+          10.0,
+          100.0
+        ],
+        "neighbour_db": [
+          63.21,
+          60.95,
+          64.93,
+          46.53,
+          46.54,
+          42.04,
+          39.1,
+          "inf",
+          "inf"
+        ],
+        "open_low": false,
+        "open_high": false,
+        "frame": 24,
+        "camera": "/obj/CAM_angle",
+        "same_db": 50.0,
+        "proposed_at": "2026-09-13 23:57:52"
+      },
+      "verdict": "採用",
+      "values": [
+        0.0,
+        0.001,
+        0.01,
+        0.1,
+        1.0
+      ],
+      "vs_default_db": [
+        46.39,
+        46.54,
+        null,
+        42.04,
+        37.48
+      ],
+      "neighbour_db": [
+        47.1,
+        46.54,
+        42.04,
+        39.1
+      ],
+      "broken": {},
+      "frame": 24,
+      "same_db": 50.0,
+      "screened_at": "2026-09-14 00:05:19"
     },
     "/obj/SUBJECT/CONSTRAINTS:benddampingscalemode": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -4613,9 +4688,69 @@
       "max": 1.0,
       "help": "Single slider to control damping, multiplied into the damping ratio.",
       "notes": [],
-      "status": "pending",
-      "reason": "",
-      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+      "status": "screened",
+      "reason": "全ての値で既定値と完全に同一の絵（1画素も変わっていない）",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
+      "proposal": {
+        "values": [
+          0.0,
+          1.0
+        ],
+        "display_values": [
+          0.0,
+          1.0
+        ],
+        "default_index": 1,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "ladder": [
+          0.0,
+          0.0001,
+          0.001,
+          0.01,
+          0.1,
+          1.0,
+          10.0,
+          100.0,
+          1000.0,
+          10000.0
+        ],
+        "neighbour_db": [
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf"
+        ],
+        "open_low": false,
+        "open_high": false,
+        "frame": 24,
+        "camera": "/obj/CAM_angle",
+        "same_db": 50.0,
+        "proposed_at": "2026-09-13 23:59:24"
+      },
+      "verdict": "差なし",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "vs_default_db": [
+        "inf",
+        null
+      ],
+      "neighbour_db": [
+        "inf"
+      ],
+      "broken": {},
+      "frame": 24,
+      "same_db": 50.0,
+      "screened_at": "2026-09-14 00:05:19"
     },
     "/obj/SUBJECT/CONSTRAINTS:bendrestscale": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -4630,9 +4765,98 @@
       "max": 2.0,
       "help": "The rest angle of the bend constraints will be the original dihedral angle between the triangles.   This scale can be used to increase or decrease this.   Setting to `0` will treat the original configuration as a flat sheet.",
       "notes": [],
-      "status": "pending",
-      "reason": "",
-      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+      "status": "screened",
+      "reason": "100000000.0: 速度が中央値の 39 倍（爆発の疑い）",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
+      "proposal": {
+        "values": [
+          1.0,
+          10000.0,
+          100000.0,
+          1000000.0,
+          100000000.0
+        ],
+        "display_values": [
+          1.0,
+          10000.0,
+          100000.0,
+          1000000.0,
+          100000000.0
+        ],
+        "default_index": 0,
+        "range": [
+          1.0,
+          100000000.0
+        ],
+        "ladder": [
+          0.0,
+          0.0001,
+          0.001,
+          0.01,
+          0.1,
+          1.0,
+          10.0,
+          100.0,
+          1000.0,
+          10000.0,
+          100000.0,
+          1000000.0,
+          10000000.0,
+          100000000.0,
+          1000000000.0,
+          10000000000.0
+        ],
+        "neighbour_db": [
+          45.8,
+          45.56,
+          58.3,
+          59.36,
+          53.15,
+          45.88,
+          45.8,
+          43.1,
+          36.41,
+          28.69,
+          24.41,
+          30.51,
+          22.1,
+          15.97,
+          14.8
+        ],
+        "open_low": false,
+        "open_high": false,
+        "frame": 24,
+        "camera": "/obj/CAM_angle",
+        "same_db": 50.0,
+        "proposed_at": "2026-09-14 00:05:03"
+      },
+      "verdict": "破綻",
+      "values": [
+        1.0,
+        10000.0,
+        100000.0,
+        1000000.0,
+        100000000.0
+      ],
+      "vs_default_db": [
+        null,
+        35.89,
+        28.65,
+        23.55,
+        20.03
+      ],
+      "neighbour_db": [
+        35.89,
+        28.69,
+        24.41,
+        22.34
+      ],
+      "broken": {
+        "100000000.0": "速度が中央値の 39 倍（爆発の疑い）"
+      },
+      "frame": 24,
+      "same_db": 50.0,
+      "screened_at": "2026-09-14 00:05:19"
     },
     "/obj/SUBJECT/CONSTRAINTS:dobendstiffnessdropoff": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -5103,5 +5327,5 @@
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
     }
   },
-  "updated": "2026-09-13 23:41:59"
+  "updated": "2026-09-14 00:05:42"
 }
