@@ -18,7 +18,8 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
   Vellum Configure Cloth と同じ拘束設定 + ビューポート work light
 - `vellum-cloth-bend.mp4` は**新シーンで撮り直し済み**（`CAM_angle` /
   実効 0, 1e-4, 1e-3, 1e-2, 10 / 隣どうし 35〜39dB）。記事も実測に書き直した。
-  **まだ push していない**
+  カラースキーム `Dark` + `overlay=format=rgb` で撮り直したのが最新
+  （エッジの白い縁と灰色潰れの対処。「カラースキームは背景の色ではなくエッジに効く」）
 - `screening.json`: 281 件 pending / `bendstiffness` は published /
   `maxviscosityiterations` は「差なし」
 
@@ -199,7 +200,7 @@ site/ とは別扱いなのでビルドの影響を受けず、撮影中でも�
     | `sceneAntialias` | 4 | `--aa` 8 |
     | `flipbookAntialias` | `UseViewportSetting` | `HighQuality` |
     | シェーディング | 環境依存 | `--shading` `SmoothWire` |
-    | `colorScheme` | `Light` | `--scheme` `Light` |
+    | `colorScheme` | `Light` | `--scheme` `Dark`（`config.VIEWPORT_SCHEME`。理由は後述） |
     | `lighting` | `HighQuality` | `--lighting` `Headlight` |
     | work light | 環境依存 | `--work-light` `Headlight` |
     | `resolution` | 1280x720 | 960x540（`config.py`） |
@@ -279,23 +280,65 @@ ffmpeg は alpha を捨てて RGB をそのまま使い、こうなる:
 - ジオメトリのエッジ → 中間 alpha なのに RGB 全開で、**アンチエイリアスが消える**
 
 `encode.py` が `color` + `overlay` で `config.VIDEO_BG`（`0x3c4147`）に合成する。
-Houdini 側はストレート（非プリマルチプライ）alpha なので overlay の既定でよい。
+
+**`overlay` の `format` を既定（`yuv420`）のままにしないこと。** overlay は混ぜる
+前に両入力をその形式へ変換するので、既定だと**前景のクロマを半分に落としてから
+合成する**ことになり、1〜2px のエッジで色が消えて無彩色に潰れる。実測（布の
+シルエットを暗い背景に合成）:
+
+```
+yuv420  (125,123,124)   <- 灰色に潰れている
+rgb     (135,121,115)   <- 手計算したストレート alpha の over と完全に一致
+```
+
+`OVERLAY_FORMAT = "rgb"` で固定してある。yuv420p への変換は最後の
+`-pix_fmt` 1回だけにする。
 
 **この不具合は MPlay では絶対に見えない。** MPlay はアルファを正しく合成して
 表示するので、GUI で FlipBook ボタンを押しても再現しない。壊れるのは
 PNG を経由して mp4 に変換するこのパイプラインだけ。
 
-### 背景色はカラースキームでは決まらない
+### カラースキームは背景の色ではなくエッジに効く
 
-ビューポートの背景は alpha=0 で書き出されるため、**Houdini 側のカラースキームは
-出力の背景に一切届かない。** 背景色は合成先の `config.VIDEO_BG` だけで決まり、
-ビューポートで見えている背景（グラデーション）は再現できない。
-カラースキームが変えるのは**床グリッドの色と濃さ**:
+背景の「面」の色は合成先の `config.VIDEO_BG` だけで決まる。ビューポートで
+見えているグラデーションは再現できない。**だがカラースキームは無関係ではない。
+エッジに効く。**
+
+**flipbook の PNG は「RGB = ビューポートを平坦化した絵（背景を焼き込み済み）」
+＋「alpha = それとは別立てのマット」で、両者が一致していない。**
+布のシルエット（frame 24 / y=200）の実測:
+
+```
+Light  x=337 RGB(255,255,255) a= 7   x=338 RGB(255,255,255) a= 27   x=339 RGB(157,137,128) a=198
+Dark   x=337 RGB(  0,  0,  0) a= 4   x=338 RGB(101, 81, 75) a= 24   x=339 RGB(124, 95, 82) a=197
+```
+
+Light では x=338 で **alpha だけが 7→27 に上がり、RGB は純白のまま**。
+マットが RGB の被覆より 1px 広いので、暗い背景に合成すると白が 10% 乗って
+**明るい縁**になる（合成後 (81,85,90)、背景は (65,70,76)）。Dark なら焼き込まれる
+背景が黒側なので縁が背景と地続きになる（合成後 (64,67,71)、背景 (59,64,70)）。
+
+逆向きの証拠もある。**alpha=0 なのに RGB が明るい画素**が Light で 8,294 個あり、
+173〜175 行に集中している（地平線のヘイズ帯）。ここは合成すると丸ごと消える。
+
+- **プリマルチプライではない。**`RGB > alpha` の画素が 18万個あり、
+  `(255,255,255, alpha=0)` すら実在する（プリマルチプライなら原理的にあり得ない）。
+  自前で PNG を展開しても ffmpeg と同じ値。**デコードも合成の式も正しい**
+- Houdini 側に逃げ道は無い。`hou.FlipbookSettings` にあるのは `antialias` /
+  `backgroundImage` / `beautyPassOnly` / `cropOutMaskOverlay` だけで、
+  アルファの出し方を変える設定は無い
+- したがって **`VIEWPORT_SCHEME` は `VIDEO_BG` と対で決める。**
+  `VIDEO_BG` を明るい色にするなら `Light` に戻すこと
+
+副作用として床グリッドの色が変わる:
 
 ```
 Dark  -> グリッド RGB(197,238,255) alpha 25   （青みがかって淡い）
 Light -> グリッド RGB(255,255,255) alpha 40   （純白で濃い）
 ```
+
+**未対応**: 右下の Houdini ウォーターマークの縁は、合成後も色が混ざって
+不自然に見える。実害が小さいので放置している。
 
 ### かつて置いていた BACKDROP / GROUND を復活させないこと
 

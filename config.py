@@ -60,6 +60,20 @@ VIDEO_CRF = 21
 # アンチエイリアスが消えてジャギーになる。
 VIDEO_BG = os.environ.get("HOUDINI_LAB_VIDEO_BG", "0x3c4147")
 
+# ビューポートのカラースキーム。**VIDEO_BG と対で決める。**
+#
+# flipbook の PNG は「RGB = ビューポートを平坦化した絵（背景を焼き込み済み）」
+# ＋「alpha = それとは別立てのマット」で、両者が一致していない。実測（Light）:
+#
+#   布のシルエット  RGB(255,255,255) alpha 27  ← alpha だけ上がり RGB は純白のまま
+#   地平線のヘイズ  RGB が明るいのに alpha 0   ← 合成すると丸ごと消える
+#
+# そのため Light だと、暗い VIDEO_BG に合成したときエッジに白い縁が出る。
+# 焼き込まれる背景が黒側になる Dark なら、縁が背景と地続きになる（実測で
+# 同じ画素が (81,85,90) → (64,67,71)、背景は (59,64,70)）。
+# **VIDEO_BG を明るい色に変えるなら、ここも Light に戻すこと。**
+VIEWPORT_SCHEME = os.environ.get("HOUDINI_LAB_SCHEME", "Dark")
+
 # draft 撮影（--draft）。解像度・フレーム数・段階数をすべて落として
 # 「振っても見た目が変わらないパラメータ」を本番前に切り捨てるためのもの。
 DRAFT_WIDTH = 480

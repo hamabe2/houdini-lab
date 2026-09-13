@@ -22,6 +22,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import config  # noqa: E402
 
 
+# overlay の合成を行う色空間。
+#
+# **既定の `yuv420` を使わないこと。** overlay は混ぜる前に両入力をこの形式へ
+# 変換するため、既定のままだと前景のクロマを半分に落としてから合成することに
+# なり、1〜2px のエッジで色が消える。実測（布のシルエット、暗い背景に合成）:
+#
+#   yuv420  (125,123,124)  ← 無彩色に潰れている
+#   rgb     (135,121,115)  ← 手計算したストレート alpha の over と完全一致
+#
+# yuv420p への変換は最後の1回（-pix_fmt）だけにする。
+OVERLAY_FORMAT = "rgb"
+
+
 class EncodeError(RuntimeError):
     pass
 
@@ -93,13 +106,11 @@ def encode(
     n = len(seg_dirs)
     streams = "".join(f"[{i}:v]" for i in range(n))
     # scale はセグメント間で解像度がずれていた場合の保険。通常は素通り。
-    # overlay は既定でストレート（非プリマルチプライ）alpha として合成する。
-    # Houdini の出力もストレートなので、そのままでよい。
     filt = (
         f"{streams}concat=n={n}:v=1:a=0[cat];"
         f"[cat]scale={width}:{height}[fg];"
         f"color=c={bg}:s={width}x{height}:r={fps}[bg];"
-        f"[bg][fg]overlay=shortest=1[out]"
+        f"[bg][fg]overlay=shortest=1:format={OVERLAY_FORMAT}[out]"
     )
 
     cmd += [
@@ -136,7 +147,8 @@ def composite_still(
     _run([
         config.FFMPEG, "-y", "-i", str(src),
         "-filter_complex",
-        f"color=c={bg}:s={width}x{height}[bg];[bg][0:v]overlay=shortest=1",
+        f"color=c={bg}:s={width}x{height}[bg];"
+        f"[bg][0:v]overlay=shortest=1:format={OVERLAY_FORMAT}",
         "-frames:v", "1",
         str(dst),
     ])

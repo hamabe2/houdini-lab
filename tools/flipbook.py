@@ -357,7 +357,7 @@ def main() -> int:
         help="ビューポートのシェーディングモード（既定 SmoothWire）",
     )
     ap.add_argument(
-        "--scheme", default="Light",
+        "--scheme", default=config.VIEWPORT_SCHEME,
         choices=("keep", "Grey", "DarkGrey", "Dark", "Light"),
         help="床グリッドの色と濃さ（既定 Light。背景色は VIDEO_BG が決める）",
     )

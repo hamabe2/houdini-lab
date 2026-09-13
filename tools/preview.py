@@ -177,7 +177,7 @@ def main() -> int:
         choices=("SmoothWire", "Smooth", "FlatWire", "Flat", "Wire"),
     )
     ap.add_argument(
-        "--scheme", default="Light", choices=("keep", "Grey", "DarkGrey", "Dark", "Light"),
+        "--scheme", default=config.VIEWPORT_SCHEME, choices=("keep", "Grey", "DarkGrey", "Dark", "Light"),
     )
     ap.add_argument(
         "--lighting", default="Headlight",
