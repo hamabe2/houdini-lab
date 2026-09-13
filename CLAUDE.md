@@ -33,12 +33,12 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
 | 候補を積む・出す（`ledger.py`） | 自動 |
 | 振る値の刻みを決める（`propose_values.py`） | 自動 |
 | 篩（`setup_sheet.py`）・判定（`screen.py`） | 自動 |
+| 上3つを N件まとめて回す（`screen_loop.py`） | 自動 |
 | 判定結果の承認 | **人間・1件ずつ**（未着手） |
 | 本撮り（`flipbook.py`）| 手動起動 |
 | JSON / 記事 / push | **手作業** |
 
-**次にやること**: 判定結果をまとめて承認する仕組み（1件ずつ聞かずに済ませる）と、
-`next → propose → sheet → screen` を N件まとめて回すドライバ。
+**次にやること**: 判定結果をまとめて承認する仕組み（1件ずつ聞かずに済ませる）。
 
 ## このプロジェクトの仕組み
 
@@ -92,6 +92,11 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 # 振る値の刻みを決める（絵が飽和する端を先に探す。端が無ければ自分で梯子を伸ばす）
 .venv\Scripts\python.exe tools\propose_values.py --hip scenes\vellum_cloth.hip `
   --node /obj/SUBJECT/CONSTRAINTS --parm bendstiffness --camera /obj/CAM_angle
+
+# 候補を N 件まとめて篩にかける（next → propose → sheet → screen を回す）
+.venv\Scripts\python.exe tools\screen_loop.py --hip scenes\vellum_cloth.hip `
+  --count 3 --camera /obj/CAM_angle
+#   --dry-run で「何を回すか」だけ確認できる（Houdini を起動しない）
 
 # 検証の台帳（screening.json）。何を調べ、何を落とし、なぜかを残す
 .venv\Scripts\python.exe tools\ledger.py add --hip scenes\vellum_cloth.hip --node /obj/SUBJECT/SOLVER
@@ -477,8 +482,23 @@ ledger.py next      次に調べる候補を出す
 propose_values.py   端を探して振る値の刻みを決める → 台帳に proposal を残す
 setup_sheet.py      候補を1フレームずつ撮る
 screen.py           PSNR で判定 → screening.json に書き戻す
+screen_loop.py      上を N 件ぶん自動で回す（人が介在するのは本撮りの判断だけ）
 flipbook.py         採用されたものだけ本撮り
 ```
+
+`screen_loop.py` の要点:
+
+- **提案した段階の絵は撮り直さない。** 段階は `propose_values.py` が撮った梯子の
+  段から選ばれるので、その時点でもう撮れている。ここで `setup_sheet.py` を
+  別に起動すると同じ sim をもう一周回すことになる（1件あたり5値ぶん）
+- **1件終わるごとに台帳へ書き戻す。** 途中で止めてもそこまでの判定は残る
+- **1件が失敗しても次へ進む。** 失敗は `error_count` / `last_error` として
+  台帳に残り、`status` は pending のまま（時間切れやダイアログは候補そのものの
+  性質ではないので、一度で永久に捨てない）。既定では2回失敗した候補を飛ばす
+- **Toggle とメニューは回さない。** 梯子は既定値に 10^k を掛けて作るので
+  数値でないと伸ばせない。候補としては台帳に残る（`ledger.LADDER_TYPES`）
+- **`--camera` を忘れないこと。** 既定は `config.DEFAULT_CAMERA`（`CAM_main`）。
+  布は `CAM_angle` で撮る（理由は下の「カメラは題材の動く向きで選ぶ」）
 
 - **差なし** = 既定値との差が 50dB 以上（＝ほぼ同じ絵）。振る価値がない
 - **採用（段階に無駄あり）** = 隣どうしが 50dB 以上。その段階は枠を捨てている

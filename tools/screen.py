@@ -178,6 +178,41 @@ def print_group(result: dict, cells: list[dict]) -> None:
     print()
 
 
+def screen_sheet(sheet_dir: Path, same_db: float = SAME_DB, verbose: bool = True) -> dict:
+    """シート1枚ぶんを判定して `screen.json` に書く。
+
+    **台帳への書き戻しはここではやらない。** 呼び出し側が
+    `ledger.merge_screen()` を呼ぶ（測るだけのときに台帳を汚さないため）。
+    """
+    meta_path = sheet_dir / "sheet.json"
+    if not meta_path.exists():
+        raise SystemExit(
+            f"setup シートがありません: {meta_path}\n"
+            "  先に tools/setup_sheet.py を実行してください。"
+        )
+
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    results = []
+    for group in meta["groups"]:
+        result = screen_group(group, sheet_dir, same_db)
+        if verbose:
+            print_group(result, group["cells"])
+        results.append(result)
+
+    record = {
+        "generated": meta.get("generated"),
+        "hip": meta.get("hip"),
+        "frame": meta.get("frame"),
+        "same_db": same_db,
+        "speed_ratio": SPEED_RATIO,
+        "results": results,
+    }
+    out = sheet_dir / "screen.json"
+    out.write_text(json.dumps(record, indent=2, ensure_ascii=False), encoding="utf-8")
+    record["path"] = str(out)
+    return record
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="setup シートの結果を PSNR とアトリビュートで判定する",
@@ -195,32 +230,14 @@ def main() -> int:
 
     sheet_dir = Path(args.sheet)
     meta_path = sheet_dir / "sheet.json"
-    if not meta_path.exists():
-        raise SystemExit(
-            f"setup シートがありません: {meta_path}\n"
-            "  先に tools/setup_sheet.py を実行してください。"
-        )
-
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    print(f"シート: {meta.get('generated', '?')}  /  hip: {meta.get('hip', '?')}")
+    if meta_path.exists():
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        print(f"シート: {meta.get('generated', '?')}  /  hip: {meta.get('hip', '?')}")
     print(f"判定しきい値: {args.same_db} dB 以上を「同じ絵」とみなす\n")
 
-    results = []
-    for group in meta["groups"]:
-        result = screen_group(group, sheet_dir, args.same_db)
-        print_group(result, group["cells"])
-        results.append(result)
-
-    record = {
-        "generated": meta.get("generated"),
-        "hip": meta.get("hip"),
-        "frame": meta.get("frame"),
-        "same_db": args.same_db,
-        "speed_ratio": SPEED_RATIO,
-        "results": results,
-    }
-    out = sheet_dir / "screen.json"
-    out.write_text(json.dumps(record, indent=2, ensure_ascii=False), encoding="utf-8")
+    record = screen_sheet(sheet_dir, args.same_db)
+    results = record["results"]
+    out = Path(record["path"])
 
     adopted = [r["parm"] for r in results if r["verdict"].startswith("採用")]
     print(f"採用候補 {len(adopted)}/{len(results)}: {', '.join(adopted) or 'なし'}")

@@ -42,6 +42,15 @@ LIST_PARMS = Path(__file__).resolve().parent / "list_parms.py"
 # 候補にしないパラメータ。振っても比較にならないもの。
 SKIP_TYPES = ("String",)
 
+# 梯子を作れる型。`propose_values.py` は既定値に 10^k を掛けて端を探すので、
+# **既定値が数値でないと動かない。** トグルやメニューは候補として残るが
+# （0/1 を並べる価値はある）、自動ループには乗せない。
+LADDER_TYPES = ("Float", "Int")
+
+# UI のタブ名が他の題材向け（流体・粒・毛など）のもの。除外ではなく順位を下げる。
+# グレーアウトほど確実な信号ではないため。
+OFF_TOPIC = ("Fluid", "Grain", "Hair", "Muscle", "Wind", "Plasticity", "Pressure")
+
 
 def key_of(node: str, parm: str) -> str:
     return f"{node}:{parm}"
@@ -168,6 +177,47 @@ def add_from_node(hip: Path, node: str, only: str | None) -> int:
     return added
 
 
+def rank(entry: dict) -> tuple:
+    """次に調べる順。振れる型を優先し、公式の説明があるものを先に。"""
+    folders = " ".join(entry.get("folders") or [])
+    return (
+        1 if any(word in folders for word in OFF_TOPIC) else 0,
+        0 if entry.get("type") in LADDER_TYPES else 1,
+        0 if entry.get("help") else 1,
+        entry.get("parm", ""),
+    )
+
+
+def pending(
+    data: dict, types: tuple[str, ...] | None = None, max_errors: int | None = None,
+) -> list[dict]:
+    """未評価の候補を、調べるべき順に並べて返す。"""
+    rows = [e for e in data.get("entries", {}).values() if e.get("status") == "pending"]
+    if types:
+        rows = [e for e in rows if e.get("type") in types]
+    if max_errors is not None:
+        rows = [e for e in rows if e.get("error_count", 0) < max_errors]
+    rows.sort(key=rank)
+    return rows
+
+
+def record_error(node: str, parm: str, message: str) -> None:
+    """撮影が失敗したことを残す。
+
+    **status は pending のままにする。** 時間切れやダイアログは候補そのものの
+    性質ではないので、一度の失敗で永久に捨てるのは強すぎる。代わりに回数を
+    数えて、ループ側が「何度も失敗するものは飛ばす」判断に使う。
+    """
+    data = load()
+    entry = data.setdefault("entries", {}).setdefault(
+        key_of(node, parm), {"node": node, "parm": parm, "status": "pending"},
+    )
+    entry["error_count"] = entry.get("error_count", 0) + 1
+    entry["last_error"] = message[:500]
+    entry["last_error_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    save(data)
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     data = load()
     entries = data.get("entries", {})
@@ -201,29 +251,14 @@ def cmd_list(args: argparse.Namespace) -> int:
 def cmd_next(args: argparse.Namespace) -> int:
     """次に調べるべき候補を出す。ループの入口。"""
     data = load()
-    pending = [e for e in data.get("entries", {}).values() if e.get("status") == "pending"]
-    if not pending:
+    rows = pending(data)
+    if not rows:
         print("未評価の候補はありません。")
         return 0
 
-    # 振れる型を優先し、説明があるもの（＝公式に意味が書かれているもの）を先に。
-    # UI のタブが他の題材向け（流体・粒・毛など）のものは後ろへ回す。
-    # グレーアウトほど確実な信号ではないので、除外ではなく順位で下げる。
-    off_topic = ("Fluid", "Grain", "Hair", "Muscle", "Wind", "Plasticity", "Pressure")
+    picked = rows[: args.count]
 
-    def rank(entry: dict) -> tuple:
-        folders = " ".join(entry.get("folders") or [])
-        return (
-            1 if any(word in folders for word in off_topic) else 0,
-            0 if entry.get("type") in ("Float", "Int") else 1,
-            0 if entry.get("help") else 1,
-            entry.get("parm", ""),
-        )
-
-    pending.sort(key=rank)
-    picked = pending[: args.count]
-
-    print(f"未評価 {len(pending)} 件のうち {len(picked)} 件:")
+    print(f"未評価 {len(rows)} 件のうち {len(picked)} 件:")
     probes = []
     for entry in picked:
         folders = " / ".join(entry.get("folders") or []) or "(タブなし)"

@@ -64,16 +64,20 @@ def write_sheet(cells: list[dict], frame: int, hip: Path) -> Path:
         shutil.rmtree(SHEET_DIR, ignore_errors=True)
     SHEET_DIR.mkdir(parents=True, exist_ok=True)
 
-    groups: dict[str, list[dict]] = {}
+    # **キーは node と parm の対にする。** parm だけだと、別ノードの同名
+    # パラメータ（CONSTRAINTS と SOLVER の両方にある類）が1グループに
+    # 混ざり、screen.py が無関係な絵どうしを比べることになる。
+    groups: dict[tuple[str, str], list[dict]] = {}
     for cell in cells:
-        name = f"{slug(cell['parm'])}_{slug(str(cell['value']))}.png"
+        name = (f"{slug(cell['node'].strip('/').replace('/', '-'))}"
+                f"_{slug(cell['parm'])}_{slug(str(cell['value']))}.png")
         # **合成してから置く。** 生の PNG は RGBA で、透明部分にも RGB が
         # 入っている。そのまま PSNR に掛けると見えない画素まで計算に入り、
         # 同じ絵でも 15dB のような数字になる（実測）。ブラウザ表示でも
         # ページの地色が透けて本番と違う絵になる。
         composite_still(Path(cell["path"]), SHEET_DIR / name)
         cell["img"] = name
-        groups.setdefault(cell["parm"], []).append(cell)
+        groups.setdefault((cell["node"], cell["parm"]), []).append(cell)
 
     meta = {
         "hip": str(hip),
@@ -82,14 +86,14 @@ def write_sheet(cells: list[dict], frame: int, hip: Path) -> Path:
         "groups": [
             {
                 "parm": parm,
-                "node": items[0]["node"],
+                "node": node,
                 "default": items[0]["default"],
                 "cells": [
                     {"value": c["value"], "img": c["img"], "geo": c.get("geo", {})}
                     for c in items
                 ],
             }
-            for parm, items in groups.items()
+            for (node, parm), items in groups.items()
         ],
     }
     (SHEET_DIR / "sheet.json").write_text(

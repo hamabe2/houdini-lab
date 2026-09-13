@@ -363,20 +363,181 @@ def shoot(hip: Path, node: str, parm: str, values: list[float],
     return cells
 
 
-def composite(cells: list[dict]) -> list[Path]:
+def composite(cells: list[dict], probe_dir: Path) -> list[Path]:
     """PSNR を測れる形（不透明な背景に合成済み）にして返す。
 
     **生の PNG のまま測らないこと。** flipbook の PNG は RGBA で、背景は
     alpha=0。透明な画素の RGB まで計算に入ると、同じ絵でも 15dB になる。
     """
-    PROBE_DIR.mkdir(parents=True, exist_ok=True)
+    probe_dir.mkdir(parents=True, exist_ok=True)
     out = []
     for cell in cells:
-        path = PROBE_DIR / f"{slug(cell['parm'])}_{slug(str(cell['value']))}.png"
+        path = probe_dir / f"{slug(cell['parm'])}_{slug(str(cell['value']))}.png"
         if not path.exists():
             composite_still(Path(cell["path"]), path)
         out.append(path)
     return out
+
+
+def propose(
+    hip: Path, node: str, parm: str, args: argparse.Namespace,
+    work_root: Path | None = None, probe_dir: Path | None = None,
+) -> dict:
+    """梯子を撮って端を探し、振る値の段階を決める。
+
+    **撮ったセルもそのまま返す。** 段階は梯子の段から選ぶので、提案した値の
+    絵は既に撮れている。呼び出し側（loop.py）はそれを setup シートに回せば、
+    同じ sim をもう一度回さずに screen.py へ渡せる。
+    """
+    work_root = work_root or config.CACHE_DIR / "shots" / "_propose"
+    probe_dir = probe_dir or PROBE_DIR
+
+    meta = load_meta(node, parm, args)
+    is_int = meta["type"] == "Int"
+    stops = ladder_stops(meta, args.cap)
+    default = float(meta["default"])
+
+    print(f"{node} / {parm}  既定 {fmt(default)}（{meta['label']}）")
+
+    for path in (probe_dir, work_root):
+        if path.exists():
+            shutil.rmtree(path, ignore_errors=True)
+
+    pending = build_ladder(meta, args.decades, args.cap, args.per_decade)
+    cells: list[dict] = []
+    rounds = 0
+
+    while True:
+        print(f"  梯子 {len(pending)} 段を frame {args.frame} で撮ります: "
+              f"{', '.join(fmt(v) for v in pending)}")
+        cells += shoot(hip, node, parm, pending, args, work_root / f"r{rounds}")
+
+        # 値でそろえる。撮り足したぶんは順番がばらばらに来る。
+        cells.sort(key=lambda c: float(c["value"]))
+        images = composite(cells, probe_dir)
+        values = [float(c["value"]) for c in cells]
+
+        nb_db = [psnr(images[i], images[i + 1]) for i in range(len(images) - 1)]
+        broken = check_geo(cells)
+        base = min(range(len(values)), key=lambda i: abs(values[i] - default))
+        span = find_range(values, base, nb_db, broken, args.same_db, stops)
+
+        if not (span["open_low"] or span["open_high"]):
+            break
+        if rounds >= args.max_rounds:
+            break
+        pending = extend_ladder(values, meta, span, EXTEND_DECADES,
+                                args.cap, args.per_decade)
+        if not pending:
+            break
+        rounds += 1
+        sides = " と ".join(s for s, on in (("下", span["open_low"]),
+                                            ("上", span["open_high"])) if on)
+        print(f"  {sides}の端がまだ見つかりません。梯子を伸ばします "
+              f"（{rounds}/{args.max_rounds} 回目）")
+
+    stages = pick_stages(values, span, base, args.stages, stops, nb_db, is_int)
+
+    mult = next((c.get("multiplier") for c in cells if c.get("multiplier")), None)
+    factor = mult["multiplier"] if mult else 1.0
+
+    lo_i = end_index(span["outer"][0], span["inner"][0], values, stops)
+    hi_i = end_index(span["outer"][1], span["inner"][1], values, stops)
+
+    default_value = int(default) if is_int else default
+    return {
+        "node": node,
+        "parm": parm,
+        "label": meta["label"],
+        "camera": args.camera,
+        "frame": args.frame,
+        "same_db": args.same_db,
+        "is_int": is_int,
+        "factor": factor,
+        "cells": cells,
+        "values": values,
+        "neighbour_db": nb_db,
+        "broken": broken,
+        "base": base,
+        "span": span,
+        "range": [values[lo_i], values[hi_i]],
+        "stages": stages,
+        "display_values": [round_sig(v * factor) for v in stages],
+        "default_index": stages.index(default_value) if default_value in stages else 0,
+    }
+
+
+def print_report(result: dict, hip: Path) -> None:
+    """梯子の実測と提案を表で出す。**提案を疑えるように数字を全部見せる。**"""
+    values, nb_db = result["values"], result["neighbour_db"]
+    span, factor = result["span"], result["factor"]
+    ci, cj = span["inner"]
+    chosen = {float(v) for v in result["stages"]}
+
+    print()
+    print(f"{'値':>12}  {'隣との差':>10}  {'実効値':>12}  備考")
+    for i, value in enumerate(values):
+        nb = f"{nb_db[i]:10.1f}" if i < len(nb_db) else " " * 10
+        marks = []
+        if i == result["base"]:
+            marks.append("既定")
+        if i < ci or i > cj:
+            marks.append("飽和（この先は同じ）")
+        if i in result["broken"]:
+            marks.append(result["broken"][i])
+        print(f"{'->' if value in chosen else '  '}{fmt(value):>10}  {nb}  "
+              f"{fmt(round_sig(value * factor)):>12}  {' / '.join(marks)}")
+
+    lo, hi = result["range"]
+    print()
+    print(f"  有効域: {fmt(lo)} 〜 {fmt(hi)}"
+          f"（実効 {fmt(round_sig(lo * factor))} 〜 {fmt(round_sig(hi * factor))}）")
+    if span["open_low"] or span["open_high"]:
+        sides = " と ".join(s for s, on in (("下", span["open_low"]),
+                                            ("上", span["open_high"])) if on)
+        print(f"  注意: {sides}の端は見つかっていません。"
+              "梯子の外でまだ絵が変わっています。")
+
+    print(f"提案: {','.join(fmt(v) for v in result['stages'])}"
+          f"  （実効 {', '.join(fmt(v) for v in result['display_values'])}）")
+    print()
+    rel = hip.relative_to(config.ROOT) if hip.is_relative_to(config.ROOT) else hip
+    print(f"  .venv\\Scripts\\python.exe tools\\flipbook.py --hip {rel} `")
+    print(f"    --node {result['node']} --parm {result['parm']} `")
+    print(f"    --values {','.join(fmt(v) for v in result['stages'])} --frames 1-48 `")
+    print(f"    --out <id> --label \"{result['label']}\" "
+          f"--default-index {result['default_index']} --camera {result['camera']}")
+
+
+def record_proposal(result: dict) -> None:
+    """提案を台帳に残す。**次に同じ梯子を撮り直さないため。**"""
+    data = ledger.load()
+    entry = data.setdefault("entries", {}).setdefault(
+        ledger.key_of(result["node"], result["parm"]),
+        {"node": result["node"], "parm": result["parm"], "status": "pending"},
+    )
+    entry["proposal"] = {
+        "values": result["stages"],
+        "display_values": result["display_values"],
+        "default_index": result["default_index"],
+        "range": result["range"],
+        "ladder": result["values"],
+        "neighbour_db": [
+            "inf" if d == float("inf") else round(d, 2) for d in result["neighbour_db"]
+        ],
+        "open_low": result["span"]["open_low"],
+        "open_high": result["span"]["open_high"],
+        "frame": result["frame"],
+        "same_db": result["same_db"],
+        "proposed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    ledger.save(data)
+
+
+def stage_cells(result: dict) -> list[dict]:
+    """提案した段階に当たるセルだけを返す（シートに載せる用）。"""
+    wanted = {float(v) for v in result["stages"]}
+    return [c for c in result["cells"] if float(c["value"]) in wanted]
 
 
 def main() -> int:
@@ -423,127 +584,15 @@ def main() -> int:
     if not hip.exists():
         raise SystemExit(f"シーンファイルがありません: {hip}")
 
-    meta = load_meta(args.node, args.parm, args)
-    is_int = meta["type"] == "Int"
-    stops = ladder_stops(meta, args.cap)
-    default = float(meta["default"])
-
-    print(f"{args.node} / {args.parm}  既定 {fmt(default)}（{meta['label']}）")
-
-    if PROBE_DIR.exists():
-        shutil.rmtree(PROBE_DIR, ignore_errors=True)
-    work_root = config.CACHE_DIR / "shots" / "_propose"
-    if work_root.exists():
-        shutil.rmtree(work_root, ignore_errors=True)
-
-    pending = build_ladder(meta, args.decades, args.cap, args.per_decade)
-    cells: list[dict] = []
-    rounds = 0
-
-    while True:
-        print(f"  梯子 {len(pending)} 段を frame {args.frame} で撮ります: "
-              f"{', '.join(fmt(v) for v in pending)}")
-        cells += shoot(hip, args.node, args.parm, pending,
-                       args, work_root / f"r{rounds}")
-
-        # 値でそろえる。撮り足したぶんは順番がばらばらに来る。
-        cells.sort(key=lambda c: float(c["value"]))
-        images = composite(cells)
-        values = [float(c["value"]) for c in cells]
-
-        nb_db = [psnr(images[i], images[i + 1]) for i in range(len(images) - 1)]
-        broken = check_geo(cells)
-        base = min(range(len(values)), key=lambda i: abs(values[i] - default))
-        span = find_range(values, base, nb_db, broken, args.same_db, stops)
-
-        if not (span["open_low"] or span["open_high"]):
-            break
-        if rounds >= args.max_rounds:
-            break
-        pending = extend_ladder(values, meta, span, EXTEND_DECADES,
-                                args.cap, args.per_decade)
-        if not pending:
-            break
-        rounds += 1
-        sides = " と ".join(s for s, on in (("下", span["open_low"]),
-                                            ("上", span["open_high"])) if on)
-        print(f"  {sides}の端がまだ見つかりません。梯子を伸ばします "
-              f"（{rounds}/{args.max_rounds} 回目）")
-
-    stages = pick_stages(values, span, base, args.stages, stops, nb_db, is_int)
-
-    mult = next((c.get("multiplier") for c in cells if c.get("multiplier")), None)
-    factor = mult["multiplier"] if mult else 1.0
-
-    ci, cj = span["inner"]
-    lo_i = end_index(span["outer"][0], ci, values, stops)
-    hi_i = end_index(span["outer"][1], cj, values, stops)
-    chosen = {float(v) for v in stages}
-
-    print()
-    print(f"{'値':>12}  {'隣との差':>10}  {'実効値':>12}  備考")
-    for i, value in enumerate(values):
-        nb = f"{nb_db[i]:10.1f}" if i < len(nb_db) else " " * 10
-        marks = []
-        if i == base:
-            marks.append("既定")
-        if i < ci or i > cj:
-            marks.append("飽和（この先は同じ）")
-        if i in broken:
-            marks.append(broken[i])
-        print(f"{'->' if value in chosen else '  '}{fmt(value):>10}  {nb}  "
-              f"{fmt(round_sig(value * factor)):>12}  {' / '.join(marks)}")
-
-    print()
-    print(f"  有効域: {fmt(values[lo_i])} 〜 {fmt(values[hi_i])}"
-          f"（実効 {fmt(round_sig(values[lo_i] * factor))} 〜 "
-          f"{fmt(round_sig(values[hi_i] * factor))}）")
-    if span["open_low"] or span["open_high"]:
-        sides = " と ".join(s for s, on in (("下", span["open_low"]),
-                                            ("上", span["open_high"])) if on)
-        print(f"  注意: {sides}の端は見つかっていません（撮り足しは "
-              f"{args.max_rounds} 回で打ち切り）。梯子の外でまだ絵が変わっています。")
-
-    display = [round_sig(v * factor) for v in stages]
-    default_value = int(default) if is_int else default
-    default_index = stages.index(default_value) if default_value in stages else 0
-
-    print(f"提案: {','.join(fmt(v) for v in stages)}"
-          f"  （実効 {', '.join(fmt(v) for v in display)}）")
-    print()
-    rel = hip.relative_to(config.ROOT) if hip.is_relative_to(config.ROOT) else hip
-    print(f"  .venv\\Scripts\\python.exe tools\\flipbook.py --hip {rel} `")
-    print(f"    --node {args.node} --parm {args.parm} `")
-    print(f"    --values {','.join(fmt(v) for v in stages)} --frames 1-48 `")
-    print(f"    --out <id> --label \"{meta['label']}\" "
-          f"--default-index {default_index} --camera {args.camera}")
+    result = propose(hip, args.node, args.parm, args)
+    print_report(result, hip)
 
     # 梯子そのものもブラウザで見られるようにしておく（提案を疑うとき用）。
-    write_sheet(cells, args.frame, hip)
+    write_sheet(result["cells"], args.frame, hip)
     print(f"\n  梯子の絵: {config.BASE_URL}/setup/")
 
     if not args.no_ledger:
-        data = ledger.load()
-        entry = data.setdefault("entries", {}).setdefault(
-            ledger.key_of(args.node, args.parm),
-            {"node": args.node, "parm": args.parm, "status": "pending"},
-        )
-        entry["proposal"] = {
-            "values": stages,
-            "display_values": display,
-            "default_index": default_index,
-            "range": [values[lo_i], values[hi_i]],
-            "ladder": values,
-            "neighbour_db": [
-                "inf" if d == float("inf") else round(d, 2) for d in nb_db
-            ],
-            "open_low": span["open_low"],
-            "open_high": span["open_high"],
-            "frame": args.frame,
-            "same_db": args.same_db,
-            "proposed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-        }
-        ledger.save(data)
+        record_proposal(result)
         print(f"  台帳に提案を残しました: {ledger.LEDGER}")
 
     return 0
