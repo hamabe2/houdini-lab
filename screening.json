@@ -4383,31 +4383,90 @@
       "notes": [
         "実効値 = 値 x 10^-4（bendstiffnessexp）"
       ],
-      "status": "screened",
-      "reason": "既定値との差 34.2〜37.4 dB",
+      "status": "published",
+      "reason": "既定値との差 34.9〜36.1 dB",
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
       "verdict": "採用",
       "values": [
-        0.1,
+        0.0,
         1.0,
         10.0,
-        100.0
+        100.0,
+        100000.0
       ],
       "vs_default_db": [
-        37.44,
+        35.02,
         null,
-        35.33,
-        34.22
+        36.13,
+        34.85,
+        35.14
       ],
       "neighbour_db": [
-        37.44,
-        35.33,
-        34.67
+        35.02,
+        36.13,
+        36.23,
+        39.38
       ],
       "broken": {},
-      "frame": 36,
+      "frame": 24,
       "same_db": 50.0,
-      "screened_at": "2026-09-11 00:32:41"
+      "screened_at": "2026-09-13 20:38:48",
+      "out": "vellum-cloth-bend",
+      "proposal": {
+        "values": [
+          0.0,
+          0.01,
+          1.0,
+          100.0,
+          100000.0
+        ],
+        "display_values": [
+          0.0,
+          1e-06,
+          0.0001,
+          0.01,
+          10.0
+        ],
+        "default_index": 2,
+        "range": [
+          0.0,
+          100000.0
+        ],
+        "ladder": [
+          0.0,
+          0.0001,
+          0.001,
+          0.01,
+          0.1,
+          1.0,
+          10.0,
+          100.0,
+          1000.0,
+          10000.0,
+          100000.0,
+          1000000.0,
+          10000000.0
+        ],
+        "neighbour_db": [
+          "inf",
+          59.35,
+          48.07,
+          40.86,
+          35.36,
+          36.13,
+          36.23,
+          37.03,
+          37.66,
+          46.52,
+          60.08,
+          68.94
+        ],
+        "open_low": false,
+        "open_high": false,
+        "frame": 24,
+        "same_db": 50.0,
+        "proposed_at": "2026-09-13 20:32:51"
+      }
     },
     "/obj/SUBJECT/CONSTRAINTS:bendstiffnessexp": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -4999,5 +5058,5 @@
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
     }
   },
-  "updated": "2026-09-11 00:58:13"
+  "updated": "2026-09-13 20:38:59"
 }
