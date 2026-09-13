@@ -594,20 +594,37 @@ document.getElementById("send").addEventListener("click", async (ev) => {{
             length = int(self.headers.get("Content-Length") or 0)
             payload = json.loads(self.rfile.read(length) or b"{}")
             decisions = payload.get("decisions") or []
-            done = 0
+
+            # **全部検証してから、まとめて書く。** 途中で弾くと半分だけ
+            # 適用された台帳が残り、画面の表示と食い違う。
+            prepared = []
             for item in decisions:
                 node, _, parm = str(item["key"]).rpartition(":")
                 status, note = item["status"], (item.get("note") or "").strip()
                 if status != "approved" and not note:
                     raise ValueError(f"理由が要ります: {item['key']}")
 
-                if status == "retry":
-                    # **overrides は retry を呼ぶ前に作る。** retry は前の判定を
-                    # retry.previous へ畳んでしまうので、梯子を先に読む。
-                    entry = ledger.load()["entries"][ledger.key_of(node, parm)]
-                    overrides = review.overrides_from_excluded(
-                        entry, item.get("excluded") or [],
+                if status != "retry":
+                    prepared.append((status, node, parm, note, None))
+                    continue
+
+                # **overrides は retry を呼ぶ前に作る。** retry は前の判定を
+                # retry.previous へ畳んでしまうので、梯子を先に読む。
+                entry = ledger.load()["entries"][ledger.key_of(node, parm)]
+                overrides, ignored = review.overrides_from_excluded(
+                    entry, item.get("excluded") or [],
+                )
+                if ignored:
+                    values = ", ".join(review.fmt_value(v) for v in ignored)
+                    raise ValueError(
+                        f"{parm}: 除外に使えない値です（{values}）。"
+                        "既定値そのものと梯子の外は境にできません"
                     )
+                prepared.append((status, node, parm, note, overrides))
+
+            done = 0
+            for status, node, parm, note, overrides in prepared:
+                if status == "retry":
                     ledger.retry(node, parm, note, overrides)
                 else:
                     ledger.decide(node, parm, status, note)

@@ -80,7 +80,9 @@ def images_for(entry: dict) -> list[dict]:
     return out
 
 
-def overrides_from_excluded(entry: dict, excluded: list) -> dict:
+def overrides_from_excluded(
+    entry: dict, excluded: list,
+) -> tuple[dict, list[float]]:
     """「この値は除く」印を、次の提案に効く指示に変える。
 
     **自由文は機械に効かない。**「1e6 で破綻している」という指摘は、値を
@@ -89,6 +91,11 @@ def overrides_from_excluded(entry: dict, excluded: list) -> dict:
 
     段は梯子の段から選ばれるので、上限は**除いた値のひとつ下の段**にする。
     `clip()` は `v <= cap` で見るため、除いた値そのものを渡すとまた撮る。
+
+    **効かせられなかった印は黙って捨てない。**`(overrides, 効かなかった値)`
+    を返す。既定値そのものは指せない（上下を切る仕組みなので、既定を境に
+    できない）し、梯子の端の外側も切りようがない。黙って無視すると
+    「チェックしたのに次も同じ値が出てくる」ことになる。
     """
     proposal = entry.get("proposal") or {}
     previous = (entry.get("retry") or {}).get("previous") or {}
@@ -101,17 +108,23 @@ def overrides_from_excluded(entry: dict, excluded: list) -> dict:
     default = float(default) if isinstance(default, (int, float)) else 0.0
 
     out: dict = {}
+    ignored: list[float] = [v for v in marks if v == default]
     high = [v for v in marks if v > default]
     low = [v for v in marks if v < default]
+
     if high:
         below = [r for r in ladder if r < min(high)]
         if below:
             out["cap"] = below[-1]
+        else:
+            ignored += high
     if low:
         above = [r for r in ladder if r > max(low)]
         if above:
             out["min"] = above[0]
-    return out
+        else:
+            ignored += low
+    return out, sorted(set(ignored))
 
 
 def awaiting() -> list[dict]:

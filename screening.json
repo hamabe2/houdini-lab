@@ -4585,11 +4585,13 @@
         "values": [
           0.0,
           0.01,
+          0.1,
           1.0
         ],
         "display_values": [
           0.0,
           0.01,
+          0.1,
           1.0
         ],
         "default_index": 1,
@@ -4625,62 +4627,59 @@
         "frame": 24,
         "camera": "/obj/CAM_angle",
         "same_db": 50.0,
-        "proposed_at": "2026-09-14 00:26:34"
+        "proposed_at": "2026-09-14 00:39:45"
       },
       "frame": 24,
       "same_db": 50.0,
       "retry": {
         "previous": {
           "verdict": "採用",
-          "reason": "既定値との差 37.5〜46.5 dB",
+          "reason": "既定値との差 37.5〜46.4 dB",
           "values": [
             0.0,
-            0.001,
             0.01,
-            0.1,
             1.0
           ],
           "vs_default_db": [
             46.39,
-            46.54,
             null,
-            42.04,
             37.48
           ],
           "neighbour_db": [
-            47.1,
-            46.54,
-            42.04,
-            39.1
+            46.39,
+            37.48
           ],
           "broken": {},
-          "screened_at": "2026-09-14 00:05:19"
+          "screened_at": "2026-09-14 00:28:36"
         },
-        "note": "もう少し絵的な差分が欲しい。",
-        "count": 1,
+        "note": "0.0と0.01は見た目の変化が少ないから0.0と0.1とかにしたほうが良さそう。",
+        "count": 2,
         "overrides": {
-          "stages": 3
+          "stages": 4
         },
-        "at": "2026-09-14 00:25:16"
+        "at": "2026-09-14 00:33:52"
       },
       "verdict": "採用",
       "reason": "既定値との差 37.5〜46.4 dB",
       "values": [
         0.0,
         0.01,
+        0.1,
         1.0
       ],
       "vs_default_db": [
         46.39,
         null,
+        42.04,
         37.48
       ],
       "neighbour_db": [
         46.39,
-        37.48
+        42.04,
+        39.1
       ],
       "broken": {},
-      "screened_at": "2026-09-14 00:28:36"
+      "screened_at": "2026-09-14 00:39:50"
     },
     "/obj/SUBJECT/CONSTRAINTS:benddampingscalemode": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -4789,7 +4788,7 @@
       "max": 2.0,
       "help": "The rest angle of the bend constraints will be the original dihedral angle between the triangles.   This scale can be used to increase or decrease this.   Setting to `0` will treat the original configuration as a flat sheet.",
       "notes": [],
-      "status": "screened",
+      "status": "approved",
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
       "proposal": {
         "values": [
@@ -4904,7 +4903,27 @@
         28.69
       ],
       "broken": {},
-      "screened_at": "2026-09-14 00:28:36"
+      "screened_at": "2026-09-14 00:28:36",
+      "decision_note": "",
+      "decided_at": "2026-09-14 00:33:55",
+      "approved_values": {
+        "values": [
+          1.0,
+          100.0,
+          1000.0,
+          10000.0,
+          100000.0
+        ],
+        "display_values": [
+          1.0,
+          100.0,
+          1000.0,
+          10000.0,
+          100000.0
+        ],
+        "default_index": 0,
+        "label": "Rest Angle Scale"
+      }
     },
     "/obj/SUBJECT/CONSTRAINTS:dobendstiffnessdropoff": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -5375,5 +5394,5 @@
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
     }
   },
-  "updated": "2026-09-14 00:28:52"
+  "updated": "2026-09-14 00:39:58"
 }

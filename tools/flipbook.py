@@ -359,7 +359,8 @@ def main() -> int:
     ap.add_argument(
         "--scheme", default=config.VIEWPORT_SCHEME,
         choices=("keep", "Grey", "DarkGrey", "Dark", "Light"),
-        help="床グリッドの色と濃さ（既定 Light。背景色は VIDEO_BG が決める）",
+        help=f"床グリッドの色とエッジの縁（既定 {config.VIEWPORT_SCHEME}）。"
+             "背景の面の色は VIDEO_BG が決める",
     )
     ap.add_argument(
         "--lighting", default="Headlight",
