@@ -4580,24 +4580,19 @@
       "help": "Stiff constraints tend to vibrate or jitter unacceptably.   Damping reduces this by bleeding energy when evaluating the constraint.  Too much damping can prevent the constraint from being satisfied, however.   Values less than 1 should be used.",
       "notes": [],
       "status": "screened",
-      "reason": "既定値との差 37.5〜46.5 dB",
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
       "proposal": {
         "values": [
           0.0,
-          0.001,
           0.01,
-          0.1,
           1.0
         ],
         "display_values": [
           0.0,
-          0.001,
           0.01,
-          0.1,
           1.0
         ],
-        "default_index": 2,
+        "default_index": 1,
         "range": [
           0.0,
           1.0
@@ -4630,33 +4625,62 @@
         "frame": 24,
         "camera": "/obj/CAM_angle",
         "same_db": 50.0,
-        "proposed_at": "2026-09-13 23:57:52"
+        "proposed_at": "2026-09-14 00:26:34"
+      },
+      "frame": 24,
+      "same_db": 50.0,
+      "retry": {
+        "previous": {
+          "verdict": "採用",
+          "reason": "既定値との差 37.5〜46.5 dB",
+          "values": [
+            0.0,
+            0.001,
+            0.01,
+            0.1,
+            1.0
+          ],
+          "vs_default_db": [
+            46.39,
+            46.54,
+            null,
+            42.04,
+            37.48
+          ],
+          "neighbour_db": [
+            47.1,
+            46.54,
+            42.04,
+            39.1
+          ],
+          "broken": {},
+          "screened_at": "2026-09-14 00:05:19"
+        },
+        "note": "もう少し絵的な差分が欲しい。",
+        "count": 1,
+        "overrides": {
+          "stages": 3
+        },
+        "at": "2026-09-14 00:25:16"
       },
       "verdict": "採用",
+      "reason": "既定値との差 37.5〜46.4 dB",
       "values": [
         0.0,
-        0.001,
         0.01,
-        0.1,
         1.0
       ],
       "vs_default_db": [
         46.39,
-        46.54,
         null,
-        42.04,
         37.48
       ],
       "neighbour_db": [
-        47.1,
-        46.54,
-        42.04,
-        39.1
+        46.39,
+        37.48
       ],
       "broken": {},
-      "frame": 24,
-      "same_db": 50.0,
-      "screened_at": "2026-09-14 00:05:19"
+      "screened_at": "2026-09-14 00:28:36"
     },
     "/obj/SUBJECT/CONSTRAINTS:benddampingscalemode": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -4766,27 +4790,26 @@
       "help": "The rest angle of the bend constraints will be the original dihedral angle between the triangles.   This scale can be used to increase or decrease this.   Setting to `0` will treat the original configuration as a flat sheet.",
       "notes": [],
       "status": "screened",
-      "reason": "100000000.0: 速度が中央値の 39 倍（爆発の疑い）",
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
       "proposal": {
         "values": [
           1.0,
+          100.0,
+          1000.0,
           10000.0,
-          100000.0,
-          1000000.0,
-          100000000.0
+          100000.0
         ],
         "display_values": [
           1.0,
+          100.0,
+          1000.0,
           10000.0,
-          100000.0,
-          1000000.0,
-          100000000.0
+          100000.0
         ],
         "default_index": 0,
         "range": [
           1.0,
-          100000000.0
+          100000.0
         ],
         "ladder": [
           0.0,
@@ -4799,12 +4822,7 @@
           100.0,
           1000.0,
           10000.0,
-          100000.0,
-          1000000.0,
-          10000000.0,
-          100000000.0,
-          1000000000.0,
-          10000000000.0
+          100000.0
         ],
         "neighbour_db": [
           45.8,
@@ -4816,47 +4834,77 @@
           45.8,
           43.1,
           36.41,
-          28.69,
-          24.41,
-          30.51,
-          22.1,
-          15.97,
-          14.8
+          28.69
         ],
         "open_low": false,
         "open_high": false,
         "frame": 24,
         "camera": "/obj/CAM_angle",
         "same_db": 50.0,
-        "proposed_at": "2026-09-14 00:05:03"
-      },
-      "verdict": "破綻",
-      "values": [
-        1.0,
-        10000.0,
-        100000.0,
-        1000000.0,
-        100000000.0
-      ],
-      "vs_default_db": [
-        null,
-        35.89,
-        28.65,
-        23.55,
-        20.03
-      ],
-      "neighbour_db": [
-        35.89,
-        28.69,
-        24.41,
-        22.34
-      ],
-      "broken": {
-        "100000000.0": "速度が中央値の 39 倍（爆発の疑い）"
+        "proposed_at": "2026-09-14 00:28:25"
       },
       "frame": 24,
       "same_db": 50.0,
-      "screened_at": "2026-09-14 00:05:19"
+      "retry": {
+        "previous": {
+          "verdict": "破綻",
+          "reason": "100000000.0: 速度が中央値の 39 倍（爆発の疑い）",
+          "values": [
+            1.0,
+            10000.0,
+            100000.0,
+            1000000.0,
+            100000000.0
+          ],
+          "vs_default_db": [
+            null,
+            35.89,
+            28.65,
+            23.55,
+            20.03
+          ],
+          "neighbour_db": [
+            35.89,
+            28.69,
+            24.41,
+            22.34
+          ],
+          "broken": {
+            "100000000.0": "速度が中央値の 39 倍（爆発の疑い）"
+          },
+          "screened_at": "2026-09-14 00:05:19"
+        },
+        "note": "1000000.0の段階で明らかな破綻が起きている。",
+        "count": 1,
+        "overrides": {
+          "cap": 100000.0
+        },
+        "at": "2026-09-14 00:25:16"
+      },
+      "verdict": "採用（段階に無駄あり）",
+      "reason": "隣どうしがほぼ同じ: 1.0→100.0",
+      "values": [
+        1.0,
+        100.0,
+        1000.0,
+        10000.0,
+        100000.0
+      ],
+      "vs_default_db": [
+        null,
+        57.84,
+        43.05,
+        35.89,
+        28.65
+      ],
+      "neighbour_db": [
+        57.84,
+        43.1,
+        36.41,
+        28.69
+      ],
+      "broken": {},
+      "screened_at": "2026-09-14 00:28:36"
     },
     "/obj/SUBJECT/CONSTRAINTS:dobendstiffnessdropoff": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -5327,5 +5375,5 @@
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
     }
   },
-  "updated": "2026-09-14 00:05:42"
+  "updated": "2026-09-14 00:28:52"
 }

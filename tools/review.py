@@ -80,6 +80,40 @@ def images_for(entry: dict) -> list[dict]:
     return out
 
 
+def overrides_from_excluded(entry: dict, excluded: list) -> dict:
+    """「この値は除く」印を、次の提案に効く指示に変える。
+
+    **自由文は機械に効かない。**「1e6 で破綻している」という指摘は、値を
+    指してもらって初めて `--cap` に変換できる。`screen.py` の破綻判定
+    （速度が中央値の20倍）は目より鈍く、人が先に気づくことがある。
+
+    段は梯子の段から選ばれるので、上限は**除いた値のひとつ下の段**にする。
+    `clip()` は `v <= cap` で見るため、除いた値そのものを渡すとまた撮る。
+    """
+    proposal = entry.get("proposal") or {}
+    previous = (entry.get("retry") or {}).get("previous") or {}
+    ladder = sorted(
+        float(v) for v in
+        (proposal.get("ladder") or entry.get("values") or previous.get("values") or [])
+    )
+    marks = [float(v) for v in excluded]
+    default = entry.get("default")
+    default = float(default) if isinstance(default, (int, float)) else 0.0
+
+    out: dict = {}
+    high = [v for v in marks if v > default]
+    low = [v for v in marks if v < default]
+    if high:
+        below = [r for r in ladder if r < min(high)]
+        if below:
+            out["cap"] = below[-1]
+    if low:
+        above = [r for r in ladder if r > max(low)]
+        if above:
+            out["min"] = above[0]
+    return out
+
+
 def awaiting() -> list[dict]:
     """承認待ちを、絵と判定の数字を添えて返す。"""
     rows = []
@@ -105,7 +139,10 @@ def prune() -> int:
     for entry in ledger.load().get("entries", {}).values():
         if entry.get("status") in ("rejected",):
             continue
-        for value in entry.get("values") or []:
+        # やり直しは前の判定を retry.previous に畳んであるので、そちらも見る。
+        # **撮り直す前に前回の絵が消えると、何が悪かったのか確かめられない。**
+        previous = (entry.get("retry") or {}).get("previous") or {}
+        for value in (entry.get("values") or []) + (previous.get("values") or []):
             keep_names.add(image_name(entry["node"], entry["parm"], value))
 
     removed = 0

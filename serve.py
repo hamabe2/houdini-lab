@@ -441,10 +441,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         caption += " <b>既定</b>"
                     if img["broken"]:
                         caption += f' <em>{esc(img["broken"])}</em>'
+                    # **値を指せる口。** 「ここで破綻している」は自由文だと
+                    # 機械に効かないが、値を指してもらえば --cap に変わる。
                     figures.append(
                         f'<figure><img src="{PREFIX}/review/{quote(img["name"])}" '
                         f'alt="{esc(str(img["value"]))}">'
-                        f"<figcaption>{caption}</figcaption></figure>"
+                        f"<figcaption>{caption}</figcaption>"
+                        f'<label class="drop"><input type="checkbox" class="exclude" '
+                        f'value="{esc(str(img["value"]))}">この値は除く</label>'
+                        f"</figure>"
                     )
                 cells = "\n".join(figures) or (
                     '<p class="empty">絵がありません'
@@ -468,9 +473,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     f'<div class="decide">'
                     f'<label><input type="radio" name="{key}" value="hold" checked>保留</label>'
                     f'<label><input type="radio" name="{key}" value="approved">承認</label>'
+                    f'<label><input type="radio" name="{key}" value="retry">やり直し</label>'
                     f'<label><input type="radio" name="{key}" value="rejected">却下</label>'
-                    f'<input type="text" class="why" placeholder="理由（却下には必須）">'
-                    f"</div></section>"
+                    f'<input type="text" class="why" '
+                    f'placeholder="理由（やり直し・却下には必須）">'
+                    f"</div>"
+                    f'<p class="node hintline">'
+                    f"やり直し = 候補は残す。刻みや範囲を変えて撮り直す"
+                    f"（除いた値より先は次から撮らない）&nbsp;/&nbsp;"
+                    f"却下 = この候補自体をやめる（二度と出てこない）</p>"
+                    f"</section>"
                 )
             body = "\n".join(blocks)
 
@@ -498,6 +510,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 font-variant-numeric:tabular-nums; }}
   figcaption b {{ color:#e6e8eb; font-weight:600; }}
   figcaption em {{ color:#f0a35e; font-style:normal; }}
+  .drop {{ display:flex; gap:.3rem; align-items:center; margin-top:.25rem;
+           font-size:.75rem; color:#9aa0a6; cursor:pointer; }}
+  .hintline {{ margin:.45rem 0 0; font-size:.75rem; color:#6b7280; }}
   .decide {{ display:flex; gap:1rem; align-items:center; margin-top:.6rem;
              font-size:.85rem; flex-wrap:wrap; }}
   .decide label {{ display:flex; gap:.3rem; align-items:center; cursor:pointer; }}
@@ -528,12 +543,16 @@ document.getElementById("send").addEventListener("click", async (ev) => {{
     const picked = section.querySelector("input[type=radio]:checked").value;
     if (picked === "hold") continue;
     const note = section.querySelector(".why").value.trim();
-    if (picked === "rejected" && !note) {{
+    if (picked !== "approved" && !note) {{
       document.getElementById("status").textContent =
-        "却下には理由が要ります: " + section.dataset.key;
+        "理由が要ります: " + section.dataset.key;
       return;
     }}
-    decisions.push({{ key: section.dataset.key, status: picked, note: note }});
+    const excluded = [...section.querySelectorAll(".exclude:checked")]
+      .map((el) => parseFloat(el.value));
+    decisions.push({{
+      key: section.dataset.key, status: picked, note: note, excluded: excluded,
+    }});
   }}
   if (!decisions.length) {{
     document.getElementById("status").textContent = "決まっているものがありません。";
@@ -579,9 +598,19 @@ document.getElementById("send").addEventListener("click", async (ev) => {{
             for item in decisions:
                 node, _, parm = str(item["key"]).rpartition(":")
                 status, note = item["status"], (item.get("note") or "").strip()
-                if status == "rejected" and not note:
-                    raise ValueError(f"却下には理由が要ります: {item['key']}")
-                ledger.decide(node, parm, status, note)
+                if status != "approved" and not note:
+                    raise ValueError(f"理由が要ります: {item['key']}")
+
+                if status == "retry":
+                    # **overrides は retry を呼ぶ前に作る。** retry は前の判定を
+                    # retry.previous へ畳んでしまうので、梯子を先に読む。
+                    entry = ledger.load()["entries"][ledger.key_of(node, parm)]
+                    overrides = review.overrides_from_excluded(
+                        entry, item.get("excluded") or [],
+                    )
+                    ledger.retry(node, parm, note, overrides)
+                else:
+                    ledger.decide(node, parm, status, note)
                 done += 1
             # 却下したぶんの絵は残しておく理由がない。
             review.prune()

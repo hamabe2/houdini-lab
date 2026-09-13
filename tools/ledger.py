@@ -20,6 +20,17 @@
   rejected  人が「撮らない」と決めた（理由つき）
   published 本撮りして公開した
 
+**人が下す決定は3つある。**「却下」と「やり直し」は違う:
+
+  承認      この段階で本撮りしてよい                → approved
+  やり直し  候補は生きている。提案（刻み・範囲）が悪い → pending に戻す + retry
+  却下      候補そのものに価値がない                → rejected（二度と戻さない）
+
+やり直しは提案だけを捨てて候補を生かす。理由は `retry.note` に、機械が
+効かせられる指示（撮る上限・下限・段数）は `retry.overrides` に入る。
+`screen_loop.py` は retry のある候補を最優先で拾い、overrides を
+`propose_values.py` に渡す。
+
 `screen.py` が判定するたびに、その結果をここへ書き戻す。
 
 **判定（verdict）と決定（status）は別物。** verdict は機械が数値で出すもので、
@@ -184,9 +195,14 @@ def add_from_node(hip: Path, node: str, only: str | None) -> int:
 
 
 def rank(entry: dict) -> tuple:
-    """次に調べる順。振れる型を優先し、公式の説明があるものを先に。"""
+    """次に調べる順。振れる型を優先し、公式の説明があるものを先に。
+
+    **やり直しは最優先。**人が絵を見て「こう撮り直せ」と言った候補で、
+    答えを待たせている。まだ誰も見ていない候補より先に返す。
+    """
     folders = " ".join(entry.get("folders") or [])
     return (
+        0 if entry.get("retry") else 1,
         1 if any(word in folders for word in OFF_TOPIC) else 0,
         0 if entry.get("type") in LADDER_TYPES else 1,
         0 if entry.get("help") else 1,
@@ -251,6 +267,67 @@ def decide(node: str, parm: str, status: str, note: str = "") -> dict:
             "default_index": proposal.get("default_index", 0),
             "label": entry.get("label") or parm,
         }
+    save(data)
+    return entry
+
+
+def retry(node: str, parm: str, note: str, overrides: dict | None = None) -> dict:
+    """やり直し。**提案だけを捨てて、候補は生かす。**
+
+    却下との違いはここ。「この候補に価値がない」のではなく「この刻み・この
+    範囲が悪い」という指摘なので、`pending` に戻して撮り直させる。
+
+    **前の判定は retry.previous に畳んで、上の階層からは消す。**status が
+    pending なのに verdict が「採用」のまま残っていると、台帳を読んだとき
+    どちらが今の事実なのか分からなくなる。
+    """
+    data = load()
+    entry = data.get("entries", {}).get(key_of(node, parm))
+    if entry is None:
+        raise KeyError(f"台帳にありません: {key_of(node, parm)}")
+
+    record = entry.setdefault("retry", {})
+    previous = {
+        key: entry.pop(key)
+        for key in ("verdict", "reason", "values", "vs_default_db",
+                    "neighbour_db", "broken", "screened_at")
+        if key in entry
+    }
+    if previous:
+        record["previous"] = previous
+
+    record["note"] = note
+    record["count"] = record.get("count", 0) + 1
+    record["overrides"] = {**(record.get("overrides") or {}), **(overrides or {})}
+    record["at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+
+    entry["status"] = "pending"
+    entry.pop("decision_note", None)
+    entry.pop("decided_at", None)
+    save(data)
+    return entry
+
+
+def reopen(node: str, parm: str) -> dict:
+    """却下を取り消す。
+
+    **決定を消すのであって、判定は消さない。**判定に戻すだけなので、
+    もう一度 `/review/` に並んで人の決定を待つ状態になる。
+    """
+    data = load()
+    entry = data.get("entries", {}).get(key_of(node, parm))
+    if entry is None:
+        raise KeyError(f"台帳にありません: {key_of(node, parm)}")
+    if entry.get("status") not in ("rejected", "approved"):
+        raise SystemExit(
+            f"{key_of(node, parm)} は決定済みではありません"
+            f"（status={entry.get('status')}）"
+        )
+
+    entry["status"] = "screened"
+    entry.pop("decision_note", None)
+    entry.pop("decided_at", None)
+    entry.pop("approved_values", None)
     save(data)
     return entry
 
@@ -412,6 +489,47 @@ def cmd_decide(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_retry(args: argparse.Namespace) -> int:
+    """やり直しを指示する。"""
+    if not args.why:
+        raise SystemExit("やり直しには --why で「何が悪いか」を書いてください")
+
+    overrides = {
+        key: value
+        for key, value in (
+            ("cap", args.cap), ("min", args.min),
+            ("stages", args.stages), ("per_decade", args.per_decade),
+        )
+        if value is not None
+    }
+    names = [p.strip() for p in ",".join(args.parm or []).split(",") if p.strip()]
+    if not names:
+        raise SystemExit("--parm を指定してください")
+
+    for name in names:
+        node, parm = resolve(name, args.node)
+        retry(node, parm, args.why, overrides)
+        print(f"  やり直し: {node} / {parm}")
+    if overrides:
+        print(f"  次の提案に効かせる指示: {overrides}")
+    print(f"{len(names)} 件を pending に戻しました"
+          "（screen_loop.py が最優先で拾います）")
+    return 0
+
+
+def cmd_reopen(args: argparse.Namespace) -> int:
+    """決定を取り消して、承認待ちに戻す。"""
+    names = [p.strip() for p in ",".join(args.parm or []).split(",") if p.strip()]
+    if not names:
+        raise SystemExit("--parm を指定してください")
+    for name in names:
+        node, parm = resolve(name, args.node)
+        reopen(node, parm)
+        print(f"  取り消し: {node} / {parm}")
+    print(f"{len(names)} 件を承認待ちに戻しました")
+    return 0
+
+
 def cmd_publish(args: argparse.Namespace) -> int:
     """公開したことを記録する。"""
     data = load()
@@ -466,6 +584,24 @@ def main() -> int:
         p.set_defaults(
             func=cmd_decide, decision="approved" if name == "approve" else "rejected",
         )
+
+    p_retry = sub.add_parser(
+        "retry", help="提案が悪いので撮り直させる（候補は生かす）",
+    )
+    p_retry.add_argument("--parm", action="append")
+    p_retry.add_argument("--node")
+    p_retry.add_argument("--why", default="", help="何が悪いか（必須）")
+    p_retry.add_argument("--cap", type=float, help="ここより上は撮らない")
+    p_retry.add_argument("--min", type=float, help="ここより下は撮らない")
+    p_retry.add_argument("--stages", type=int, help="提案する段階数")
+    p_retry.add_argument("--per-decade", type=int, choices=(1, 2, 3, 4),
+                         help="1桁を何段に割るか")
+    p_retry.set_defaults(func=cmd_retry)
+
+    p_reopen = sub.add_parser("reopen", help="承認・却下を取り消して承認待ちに戻す")
+    p_reopen.add_argument("--parm", action="append")
+    p_reopen.add_argument("--node")
+    p_reopen.set_defaults(func=cmd_reopen)
 
     p_pub = sub.add_parser("publish", help="公開したことを記録する")
     p_pub.add_argument("--node", required=True)

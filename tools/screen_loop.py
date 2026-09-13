@@ -37,6 +37,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import shutil
 import sys
 import time
@@ -128,6 +129,11 @@ def main() -> int:
         folders = " / ".join(entry.get("folders") or []) or "(タブなし)"
         print(f"  {i}. {entry['node']} / {entry['parm']}"
               f"  （{entry.get('label', '')} — {folders}）")
+        again = entry.get("retry") or {}
+        if again:
+            print(f"      やり直し{again.get('count', 1)}回目: {again.get('note', '')}")
+            if again.get("overrides"):
+                print(f"      指示: {again['overrides']}")
     if args.dry_run:
         print("\n--dry-run なのでここまで。")
         return 0
@@ -147,9 +153,22 @@ def main() -> int:
               f"（経過 {elapsed(started)}）===")
         one = time.time()
 
+        # **やり直しの指示をこの候補にだけ効かせる。** args を直接書き換えると
+        # 次の候補にも漏れる（--cap を1件のために下げたつもりが全部に効く）。
+        again = entry.get("retry") or {}
+        call_args = copy.copy(args)
+        if again:
+            print(f"  やり直し{again.get('count', 1)}回目: {again.get('note', '')}")
+            for key, value in (again.get("overrides") or {}).items():
+                if not hasattr(call_args, key):
+                    print(f"  （知らない指示なので無視します: {key}）")
+                    continue
+                setattr(call_args, key, value)
+                print(f"  指示を反映: {key} = {value}")
+
         try:
             result = propose_values.propose(
-                hip, node, parm, args,
+                hip, node, parm, call_args,
                 work_root=RUN_DIR / f"c{i}", probe_dir=RUN_DIR / "probe" / f"c{i}",
             )
         except SystemExit as exc:          # 梯子が作れない・撮れ高が合わない等

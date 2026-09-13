@@ -105,6 +105,10 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 .venv\Scripts\python.exe tools\ledger.py approve --parm niter,veldamping
 .venv\Scripts\python.exe tools\ledger.py reject --parm adhesion --why "この構成では効かない"
 .venv\Scripts\python.exe tools\ledger.py approve --all
+# 提案が悪いだけなら「やり直し」。候補は残り、次のループが最優先で拾う
+.venv\Scripts\python.exe tools\ledger.py retry --parm bendrestscale `
+  --why "1e6 で破綻している" --cap 100000
+.venv\Scripts\python.exe tools\ledger.py reopen --parm bendrestscale   # 決定の取り消し
 .venv\Scripts\python.exe tools\review.py --approved   # 本撮りのコマンドを出す
 
 # 検証の台帳（screening.json）。何を調べ、何を落とし、なぜかを残す
@@ -493,7 +497,7 @@ propose_values.py   端を探して振る値の刻みを決める → 台帳に 
 setup_sheet.py      候補を1フレームずつ撮る
 screen.py           PSNR で判定 → screening.json に書き戻す
 screen_loop.py      上を N 件ぶん自動で回す（人が介在するのは本撮りの判断だけ）
-/review/            承認待ちを絵で並べて、まとめて承認・却下する
+/review/            承認待ちを絵で並べて、まとめて承認・やり直し・却下する
 review.py           承認待ち / 承認済み（本撮りのコマンド付き）を端末で見る
 flipbook.py         承認されたものだけ本撮り
 ```
@@ -502,15 +506,38 @@ flipbook.py         承認されたものだけ本撮り
 「既定値と絵が変わるか」しか見ていない。撮る価値があるかは人が決める。
 
 ```
-pending → screened ─┬→ approved  → published    本撮りしてよい
-                    └→ rejected                 撮らない（--why で理由を残す）
+                    ┌→ approved  → published    この段階で本撮りしてよい
+pending → screened ─┼→ pending（やり直し）       候補は生きている。提案が悪い
+                    └→ rejected                 候補自体に価値がない
 ```
+
+**「却下」と「やり直し」を分けること。** 一度ここを混ぜて実際に事故った:
+`/review/` の選択肢が承認と却下しかなく、却下に理由を書かせていたため、
+**「理由を書けば読み取って再トライしてくれる」と読まれた。**書かせた理由を
+誰も読まないなら、それは記録であって指示ではない。実際に書かれた理由は
+どちらも「刻みが悪い」「この値から先は破綻している」＝ やり直しの依頼だった。
 
 - **「差なし」は人に見せない**（数値で決着がついていて覆す材料がない）。
   **「破綻」は見せる**。片端に破綻する値を入れるのは意図的な選び方なので、
   機械に捨てさせない（`ledger.is_awaiting()`）
-- **却下には理由が要る。** 画面も CLI も理由なしでは通さない。なぜ落としたかが
-  残っていないと、次に同じ候補を見たとき判断をやり直すことになる
+- **却下とやり直しには理由が要る。** 画面も CLI も理由なしでは通さない。
+  なぜ落としたかが残っていないと、次に同じ候補を見たとき判断をやり直すことになる
+- **自由文は機械に効かない。効かせたいものは値で指す。**「1e6 で破綻している」は
+  文章のままでは `--cap` にならない。`/review/` は絵のセルごとに
+  **「この値は除く」**チェックを持っていて、印を付けると
+  `review.overrides_from_excluded()` が**梯子のひとつ下の段**を `cap` にする
+  （`clip()` は `v <= cap` で見るので、除いた値そのものを渡すとまた撮る）。
+  段数や刻みの細かさは `retry.overrides` の `stages` / `per_decade` で渡す。
+  **残りの自由文は `retry.note` に残り、次に回すとき人かモデルが読む**
+- **`screen.py` の破綻判定は目より鈍い。** `SPEED_RATIO = 20`（速度 p95 が
+  中央値の20倍）に届かない破綻を人が先に見つけた実例がある
+  （`bendrestscale` は機械が 1e8 で鳴らし、人は 1e6 で気づいた）。
+  だから人が値を指せる口が要る
+- **やり直しの指示は候補ごとに効かせる。** `screen_loop.py` は `args` を
+  複製してから上書きする。直接書き換えると、1件のために下げた `--cap` が
+  後続の全候補に漏れる
+- **やり直しは前の判定を `retry.previous` に畳む。** status が pending なのに
+  verdict が「採用」のまま残っていると、どちらが今の事実か分からなくなる
 - **承認した時点の値を `approved_values` に凍らせる。** `propose_values.py` を
   回し直すと提案は変わりうるが、承認したのはそのとき見た5枚の絵
 - **撮影中は承認しない。** 台帳はファイル1本を丸ごと読み書きするので、
