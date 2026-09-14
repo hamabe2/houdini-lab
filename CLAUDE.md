@@ -140,9 +140,12 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 .venv\Scripts\python.exe tools\ledger.py publish --parm benddampingratio  # 公開したら
 
 # 無人モード（外出中に篩 → 自動承認 → 本撮り → 記事の下書きまで通す）
-.venv\Scripts\python.exe tools\unattended.py --hip scenes\vellum_cloth.hip --count 6 --hours 4
+# **Claude Code ではなく普通の PowerShell から叩く。**トークンを使わない
+.venv\Scripts\python.exe tools\unattended.py --hip scenes\vellum_cloth.hip `
+  --count 6 --hours 4 --log
 #   --dry-run で「何を回すか」だけ確認できる
 #   --camera は省略してよい（検証リストで一番使われているカメラを既定にする）
+#   --log は値を省くと unattended.log。PowerShell の *> は使わない（文字化け）
 #   帰宅後 : http://127.0.0.1:8765/houdini-lab/watch/   ← 動画を見て決める
 .venv\Scripts\python.exe tools\ledger.py approve --auto   # 「採用」だけ機械が承認
 .venv\Scripts\python.exe tools\draft.py                   # 撮影済みから記事の下書き
@@ -761,6 +764,26 @@ draft.py        撮影済みから記事の下書きを作る（公開はされ�
   「帰ってきたらまだ回っていた」ことになる。承認済みは残るので次に `shoot.py`
 - **出力は行バッファにしてある。** 既定のブロックバッファだと子プロセスの
   出力が先に出て、どの見出しの下で何が起きたのか読めなくなる
+- **ログは `--log` で残す。** PowerShell の `*>` に任せると環境の文字コード
+  次第で日本語が化ける。帰ってきて読めないログほど困るものはない。
+  子プロセス（`screen_loop` / `shoot`）の出力も 1 行ずつ読んで同じファイルに
+  入れている（まとめて受け取ると、数十分ターミナルが無音になる）
+
+### 起動は Claude Code からではなく PowerShell から
+
+**このパイプラインは LLM を一切呼ばない。**判断はすべて数値（PSNR・速度 p95・
+verdict の文字列）で、外部通信も無い。だから無人モードそのものにトークンは
+かからず、限界に当たるのはディスクと Houdini のライセンスと時間の方。
+
+**ただし Claude 経由で起動すると話が変わる。**
+
+- 完了時に**数時間分のログが丸ごとコンテキストに入る**（これが一番大きい）
+- Claude Code のセッションを開いたままにする必要がある（閉じると子プロセスも死ぬ）
+- シェルツールは1回10分で打ち切られるので、長いバッチは待てない
+
+**普通の PowerShell ウィンドウから叩くこと。**帰宅後に Claude を使うのは、
+`ja` を書く・記事を本体へ移す・撮り直しを相談する、といった**言葉が要る部分
+だけ**でよい。`--log` のファイルがあれば、必要な範囲だけ読ませられる。
 
 ### 下書きが公開されない仕組み
 

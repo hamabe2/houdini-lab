@@ -14,3 +14,6 @@ tools/_cache/
 scenes/*.hip[0-9]*
 scenes/*.hipnc[0-9]*
 scenes/backup/
+
+# 無人モードのログ（--log の既定の置き場）
+unattended.log

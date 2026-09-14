@@ -73,11 +73,53 @@ def last_camera() -> str | None:
     return max(seen, key=seen.get) if seen else None
 
 
-def run(name: str, cmd: list[str]) -> int:
+class Tee:
+    """端末とログファイルの両方に書く。
+
+    **ログはファイルに残す。** 無人モードの出力は後から読むもので、
+    端末のスクロールバックに頼ると、閉じた時点で消える。UTF-8 で書くのは
+    PowerShell の `*>` に任せると環境の文字コード次第で化けるため。
+
+    子プロセス（screen_loop / shoot）の出力は親が1行ずつ読んで `print` する
+    ので、そちらも同じファイルに入る。
+    """
+
+    def __init__(self, stream, path: Path):
+        self.stream = stream
+        self.file = open(path, "a", encoding="utf-8", buffering=1)
+
+    def write(self, text: str) -> int:
+        self.stream.write(text)
+        self.file.write(text)
+        return len(text)
+
+    def flush(self) -> None:
+        self.stream.flush()
+        self.file.flush()
+
+
+def run(name: str, cmd: list[str], log: Path | None = None) -> int:
     """子プロセスを回して終了コードを返す。**落ちても次へ進む。**"""
     print(f"\n{'=' * 60}\n  {name}\n{'=' * 60}")
+    sys.stdout.flush()
     try:
-        return subprocess.run(cmd).returncode
+        if log is None:
+            return subprocess.run(cmd).returncode
+        # **子の出力もログに入れる。** 撮影の進捗（flipbook.log の中身）は
+        # ここにしか出ないので、取りこぼすと何分かかって何が失敗したのか
+        # 後から分からない。
+        #
+        # **1行ずつ読んで流す。** まとめて受け取ると、screen_loop が数十分
+        # 走っている間ターミナルが無音になり、止まっているのか進んでいるのか
+        # 分からなくなる。
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="replace", bufsize=1,
+        )
+        with proc.stdout:
+            for line in proc.stdout:
+                print(line, end="")
+        return proc.wait()
     except KeyboardInterrupt:
         raise
     except Exception as exc:
@@ -105,7 +147,18 @@ def main() -> int:
                     help="篩と自動承認だけ。本撮りはしない")
     ap.add_argument("--dry-run", action="store_true",
                     help="何を回すかだけ表示して、Houdini を起動しない")
+    ap.add_argument("--log", metavar="PATH", nargs="?", const="unattended.log",
+                    help="出力を UTF-8 でこのファイルにも書く"
+                         "（値を省くと unattended.log）")
     args = ap.parse_args()
+
+    # **ログは自前で書く。** PowerShell の `*>` に任せると環境の文字コード
+    # 次第で日本語が化ける。出かける前に回すものなので、帰ってきて読めない
+    # ログほど困るものはない。
+    log_path = Path(args.log).resolve() if args.log else None
+    if log_path:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        sys.stdout = Tee(sys.stdout, log_path)
 
     hip = Path(args.hip).resolve()
     if not hip.exists():
@@ -123,8 +176,10 @@ def main() -> int:
         "awaiting": len(ledger.awaiting()),
         "approved": len(ledger.approved()),
     }
-    print(f"無人モード開始 {time.strftime('%H:%M')}"
+    print(f"\n無人モード開始 {time.strftime('%Y-%m-%d %H:%M')}"
           f"（未評価 {before['pending']} 件 / 承認待ち {before['awaiting']} 件）")
+    if log_path:
+        print(f"  ログ: {log_path}")
     if deadline:
         print(f"  {time.strftime('%H:%M', time.localtime(deadline))} を過ぎたら"
               "新しい候補を始めません")
@@ -138,7 +193,7 @@ def main() -> int:
     ]
     if args.dry_run:
         loop.append("--dry-run")
-    run(f"篩にかける（{args.count} 件）", loop)
+    run(f"篩にかける（{args.count} 件）", loop, log_path)
 
     # --- 2. 自動承認 ---------------------------------------------------------
     # **ここは機械の判定だけで決める。**「採用」以外は screened のまま残して
@@ -171,12 +226,12 @@ def main() -> int:
         shoot = [sys.executable, str(TOOLS_DIR / "shoot.py"), "--frames", args.frames]
         if args.dry_run:
             shoot.append("--dry-run")
-        run("承認済みをまとめて本撮り", shoot)
+        run("承認済みをまとめて本撮り", shoot, log_path)
 
         # --- 4. 下書き -------------------------------------------------------
         drafts = [sys.executable, str(TOOLS_DIR / "draft.py")]
         if not args.dry_run:
-            run("撮影済みから記事の下書きを作る", drafts)
+            run("撮影済みから記事の下書きを作る", drafts, log_path)
 
     # --- まとめ -------------------------------------------------------------
     after_await = ledger.awaiting()
