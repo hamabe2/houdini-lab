@@ -70,3 +70,29 @@ description: Vellum Constraints の各パラメータを、値を段階的に変
 | Substeps / Constraint Iterations | 3 / 100 |
 | 質量 / 厚み | Calculate Varying (density 0.1) / Calculate Uniform (Edge Length Scale 0.25) |
 | Gravity / Velocity Damping | -9.80665 / 0 |
+
+## benddampingratio
+
+曲げ拘束の減衰。拘束を解くときにエネルギーを抜いて、硬い拘束が起こす振動や
+ジッタを抑える。UI では **Bend > Damping Ratio**（範囲 0〜1）。
+
+:::compare vellum-cloth-benddampingratio
+
+- **UI の範囲がそのまま有効域。** `0`〜`1` の外は測っていない。公式の説明も
+  「1 未満で使う」としている
+- **既定（`0.01`）は有効域のほぼ下端。** 減衰をほとんど効かせていない状態が
+  出荷時の設定
+- **`0` と既定 `0.01` はほぼ同じ絵**（1フレーム比較で 46.4dB）。差が見えるのは
+  `0.1` から（既定との差 42.0dB → `1` で 37.5dB）
+- 段階は `0, 0.01, 0.1, 1` の4つ。**既定を含めるため下側が密**になっている
+
+固定値:
+
+| | |
+|---|---|
+| Bend Type / Bend Stiffness | Angle / 実効 0.0001 |
+| Stretch / Compression Stiffness | 実効 1e10 / 1e3 |
+| Stretch Damping Ratio | 0.001 |
+| Substeps / Constraint Iterations | 3 / 100 |
+| 質量 / 厚み | Calculate Varying (density 0.1) / Calculate Uniform (Edge Length Scale 0.25) |
+| Gravity / Velocity Damping | -9.80665 / 0 |

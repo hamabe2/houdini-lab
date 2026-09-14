@@ -1,0 +1,21 @@
+{
+  "id": "vellum-cloth-benddampingratio",
+  "src": "vellum-cloth-benddampingratio.mp4",
+  "parm": "benddampingratio",
+  "label": "Damping Ratio",
+  "node": "/obj/SUBJECT/CONSTRAINTS",
+  "values": [
+    0.0,
+    0.01,
+    0.1,
+    1.0
+  ],
+  "raw_values": null,
+  "multiplier": null,
+  "default_index": 1,
+  "fps": 24,
+  "frames_per_segment": 48,
+  "width": 960,
+  "height": 540,
+  "camera": "CAM_angle"
+}

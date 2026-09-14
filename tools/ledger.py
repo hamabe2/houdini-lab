@@ -664,6 +664,23 @@ def cmd_retry(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_accept(args: argparse.Namespace) -> int:
+    """撮れた動画が使えると決める（`/watch/` の「採用」と同じ）。
+
+    画面からしか決められないと、**人が口で言った決定を代わりに記録できない。**
+    却下・撮り直しに CLI があるのと同じ理由で、ここにも口を開けておく。
+    """
+    names = [p.strip() for p in ",".join(args.parm or []).split(",") if p.strip()]
+    if not names:
+        raise SystemExit("--parm を指定してください")
+    for name in names:
+        node, parm = resolve(name, args.node)
+        mark_watched(node, parm, args.why or "")
+        print(f"  採用: {node} / {parm}")
+    print(f"{len(names)} 件を「動画を見て採用」にしました（status は shot のまま）")
+    return 0
+
+
 def cmd_describe(args: argparse.Namespace) -> int:
     """日本語の説明を書く（`/watch/` と記事の下書きが使う）。"""
     node, parm = resolve(args.parm, args.node)
@@ -766,6 +783,14 @@ def main() -> int:
     p_retry.add_argument("--per-decade", type=int, choices=(1, 2, 3, 4),
                          help="1桁を何段に割るか")
     p_retry.set_defaults(func=cmd_retry)
+
+    p_accept = sub.add_parser(
+        "accept", help="撮れた動画が使えると決める（/watch/ の「採用」と同じ）",
+    )
+    p_accept.add_argument("--parm", action="append")
+    p_accept.add_argument("--node", help="同名が複数のノードにあるときだけ必要")
+    p_accept.add_argument("--why", default="", help="気づいたこと（任意）")
+    p_accept.set_defaults(func=cmd_accept)
 
     p_desc = sub.add_parser(
         "describe", help="このパラメータが何をするものかを日本語で残す",
