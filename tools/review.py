@@ -172,6 +172,48 @@ def fmt_value(value) -> str:
     return str(int(number)) if number == int(number) else f"{number:.10g}"
 
 
+def ui_path(entry: dict) -> str:
+    """UI でどこを触るか。**内部名では Houdini 上で探せない。**
+
+    `niter` は UI では "Constraint Iterations"。内部名だけ見ても何のことか
+    分からないので、タブ名とラベルを繋いで出す。
+    """
+    folders = entry.get("folders") or []
+    label = entry.get("label") or entry.get("parm", "")
+    return " > ".join([*folders, label])
+
+
+def spec_line(entry: dict) -> str:
+    """型・既定値・範囲を1行にする。**判断に要る素性。**"""
+    bits = [entry.get("type", "")]
+    if entry.get("default") is not None:
+        bits.append(f"既定 {fmt_value(entry['default'])}")
+    if entry.get("min") is not None and entry.get("max") is not None:
+        bits.append(f"範囲の目安 {fmt_value(entry['min'])}〜{fmt_value(entry['max'])}")
+    return " / ".join(b for b in bits if b)
+
+
+def help_summary(text: str, sentences: int = 3, limit: int = 240) -> str:
+    """公式の説明を2〜3文に切る。
+
+    **nodes.zip の本文は長い。**動画を見て決める場所で全文を読ませると、
+    肝心の動画より説明のほうが場所を取る。冒頭だけ出して、全文は畳む。
+
+    翻訳はしない。**機械にできるのは切ることだけ**で、訳し損ねた説明を
+    信じて判断されるほうが害が大きい。
+    """
+    text = " ".join((text or "").split())
+    if not text:
+        return ""
+    parts = re.split(r"(?<=[.!?])\s+", text)
+    out = ""
+    for part in parts[:sentences]:
+        if out and len(out) + len(part) + 1 > limit:
+            break
+        out = f"{out} {part}".strip()
+    return out if out else text[:limit]
+
+
 def flipbook_command(entry: dict) -> str:
     """承認済みの1件を本撮りするコマンド。
 

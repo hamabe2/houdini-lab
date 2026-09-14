@@ -342,6 +342,29 @@ def mark_shot(node: str, parm: str, out: str) -> dict:
     return entry
 
 
+def describe(node: str, parm: str, ja: str) -> dict:
+    """このパラメータが何をするものかを日本語で残す（`ja`）。
+
+    **公式の説明は英語で、機械には訳せない。** `nodes.zip` の本文を切って
+    出すことはできるが、動画を見て決める場所で毎回英語を読み直すのは負荷が
+    高い。人が一度書けば以後ずっと使える。
+
+    空文字を渡すと消す。**訳し損ねたものを残すより、英語に戻すほうが安全。**
+    """
+    data = load()
+    entry = data.get("entries", {}).get(key_of(node, parm))
+    if entry is None:
+        raise KeyError(f"検証リストにありません: {key_of(node, parm)}")
+
+    ja = (ja or "").strip()
+    if ja:
+        entry["ja"] = ja
+    else:
+        entry.pop("ja", None)
+    save(data)
+    return entry
+
+
 def mark_watched(node: str, parm: str, note: str = "") -> dict:
     """撮れた動画を人が見て「使える」と決めたことを記録する。
 
@@ -641,6 +664,14 @@ def cmd_retry(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_describe(args: argparse.Namespace) -> int:
+    """日本語の説明を書く（`/watch/` と記事の下書きが使う）。"""
+    node, parm = resolve(args.parm, args.node)
+    describe(node, parm, args.ja)
+    print(f"  {'書きました' if args.ja.strip() else '消しました'}: {node} / {parm}")
+    return 0
+
+
 def cmd_reopen(args: argparse.Namespace) -> int:
     """決定を取り消して、承認待ちに戻す。"""
     names = [p.strip() for p in ",".join(args.parm or []).split(",") if p.strip()]
@@ -735,6 +766,15 @@ def main() -> int:
     p_retry.add_argument("--per-decade", type=int, choices=(1, 2, 3, 4),
                          help="1桁を何段に割るか")
     p_retry.set_defaults(func=cmd_retry)
+
+    p_desc = sub.add_parser(
+        "describe", help="このパラメータが何をするものかを日本語で残す",
+    )
+    p_desc.add_argument("--parm", required=True)
+    p_desc.add_argument("--node", help="同名が複数のノードにあるときだけ必要")
+    p_desc.add_argument("--ja", required=True,
+                        help="2〜3行の説明。空文字を渡すと消す")
+    p_desc.set_defaults(func=cmd_describe)
 
     p_reopen = sub.add_parser("reopen", help="承認・却下を取り消して承認待ちに戻す")
     p_reopen.add_argument("--parm", action="append")

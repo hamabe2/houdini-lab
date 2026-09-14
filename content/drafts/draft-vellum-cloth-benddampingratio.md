@@ -13,6 +13,8 @@ merge_into: vellum-constraints.md
 ---
 ## benddampingratio
 
+曲げ拘束の減衰。拘束を解くときにエネルギーを抜いて、硬い拘束が起こす振動やジッタを抑える。強すぎると拘束そのものが満たされなくなるので 1 未満で使う。
+
 UI では **Bend > Damping Ratio**。
 
 :::compare vellum-cloth-benddampingratio

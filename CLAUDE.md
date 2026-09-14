@@ -146,6 +146,11 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 .venv\Scripts\python.exe tools\ledger.py approve --auto   # 「採用」だけ機械が承認
 .venv\Scripts\python.exe tools\draft.py                   # 撮影済みから記事の下書き
 
+# パラメータの日本語の説明（/watch/ と記事の下書きが使う。公式は英語しかない）
+.venv\Scripts\python.exe tools\ledger.py describe --parm benddampingratio `
+  --ja "曲げ拘束の減衰。硬い拘束が起こす振動を抑える。強すぎると拘束が満たされない"
+#   /watch/ の入力欄からも書ける（保留のまま説明だけ送れる）
+
 # 検証リスト（screening.json）。何を調べ、何を落とし、なぜかを残す
 .venv\Scripts\python.exe tools\ledger.py add --hip scenes\vellum_cloth.hip --node /obj/SUBJECT/SOLVER
 .venv\Scripts\python.exe tools\ledger.py next --count 3   # 次に調べる候補
@@ -561,6 +566,18 @@ pending → screened ─┼→ pending（やり直し）           候補は生�
 `/watch/` の「採用」は status を動かさない。立つのは `watched_at` の印だけで、
 **動画が使えることと記事になったことは別**だから。公開は記事を書いて push して
 初めて成り、そこで `ledger.py publish` が `published` に上げる。
+
+**`/watch/` にはパラメータの説明を載せる。** 内部名だけでは Houdini 上で
+探せないし、何をするものかも分からない。出すのは UI の位置（`Bend > Damping
+Ratio`）・型と既定値と範囲・説明の3つ。
+
+- **公式の説明は英語で、機械には訳せない。** `nodes.zip` の本文を2〜3文に
+  切って出す（`review.help_summary`）。翻訳はしない。訳し損ねた説明を信じて
+  判断されるほうが害が大きい
+- **日本語は人が書く**（`ja`）。`ledger.py describe` か `/watch/` の入力欄。
+  書くと以後そちらが主になり、英語は畳まれる。記事の下書きにも入る
+- **保留のまま説明だけ送れる。** 書くために決めなければならないのでは、
+  結局あとで書き直すことになる
 
 **`shot`（撮影済み・未公開）を挟むこと。** 撮り終えたものを approved のままに
 すると `review.py --approved` が「本撮りするならこれ」と同じものを出し続け、

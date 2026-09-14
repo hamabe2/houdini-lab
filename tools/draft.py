@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import config  # noqa: E402
 import ledger  # noqa: E402
-from review import fmt_value  # noqa: E402
+from review import fmt_value, ui_path  # noqa: E402
 
 FRONT_MATTER = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
@@ -77,13 +77,6 @@ def parent_page(node_path: str) -> tuple[Path | None, dict]:
     return None, {}
 
 
-def ui_path(entry: dict) -> str:
-    """UI でどこを触るか。**内部名では Houdini 上で探せない。**"""
-    folders = entry.get("folders") or []
-    label = entry.get("label") or entry["parm"]
-    return " > ".join([*folders, label])
-
-
 def measured_table(entry: dict, meta: dict) -> list[str]:
     """振った値と、機械が測った差を表にする。
 
@@ -116,6 +109,11 @@ def section(entry: dict, meta: dict) -> str:
     lines = [f"## {parm}", ""]
 
     help_text = (entry.get("help") or "").strip()
+    ja = (entry.get("ja") or "").strip()
+    # 人が書いた日本語があれば先頭に置く（`ledger.py describe` か `/watch/`
+    # の入力欄で書いたもの）。記事の書き出しに一番近い文はこれ。
+    if ja:
+        lines += [ja, ""]
     lines += [f"UI では **{ui_path(entry)}**。", ""]
     lines += [f":::compare {entry['out']}", ""]
 

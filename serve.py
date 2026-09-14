@@ -635,6 +635,48 @@ document.getElementById("send").addEventListener("click", async (ev) => {{
             if entry.get("shot_at"):
                 facts.append(f"撮影 {esc(entry['shot_at'])}")
 
+            # **何のパラメータなのかをここで言う。** 内部名だけでは Houdini 上で
+            # 探せないし、何をするものかも分からない。動画の隣に置いて、
+            # 「何を見せられているのか」を思い出さずに済むようにする。
+            about = [
+                f'<p class="about">UI では <b>{esc(review.ui_path(entry))}</b>'
+                f'<span class="spec">{esc(review.spec_line(entry))}</span></p>'
+            ]
+            help_text = (entry.get("help") or "").strip()
+            summary = review.help_summary(help_text)
+            ja = (entry.get("ja") or "").strip()
+
+            # **日本語があればそれを主にする。** 公式の説明は英語で、機械には
+            # 訳せない（`ledger.describe` に人が書く）。英語は畳んで下に置く。
+            if ja:
+                about.append(f'<p class="about ja">{esc(ja)}</p>')
+                if summary:
+                    about.append(
+                        f"<details><summary>公式の説明（英語）</summary>"
+                        f'<p class="about">{esc(help_text or summary)}</p></details>'
+                    )
+            elif summary:
+                about.append(f'<p class="about">{esc(summary)}</p>')
+                # ほとんど切れていないなら畳む意味がない（開いても同じ文が出る）。
+                if len(summary) + 40 < len(" ".join(help_text.split())):
+                    about.append(
+                        f"<details><summary>公式の説明の全文</summary>"
+                        f'<p class="about">{esc(help_text)}</p></details>'
+                    )
+            else:
+                about.append(
+                    '<p class="about">公式の説明が見つかっていない'
+                    "（nodes.zip に項目が無いパラメータ）。</p>"
+                )
+
+            # 日本語はこの場で書ける。**決定と同じ画面で書けないと、結局
+            # 端末とブラウザを往復することになる**（承認画面と同じ理屈）。
+            about.append(
+                f'<p class="jaedit"><input type="text" class="ja-input" '
+                f'value="{esc(ja)}" '
+                f'placeholder="日本語の説明（2〜3行。書くと次からこれが出る）"></p>'
+            )
+
             draft_path = config.DRAFT_DIR / f"draft-{out}.md"
             links = [f'<code>{esc(out)}.mp4</code>']
             if draft_path.exists():
@@ -647,6 +689,7 @@ document.getElementById("send").addEventListener("click", async (ev) => {{
                 f'<h2>{esc(entry["parm"])}'
                 f'<span class="verdict">{esc(entry.get("label", ""))}</span></h2>'
                 f'<p class="node">{" &middot; ".join(facts)}</p>'
+                + "".join(about) +
                 f'<param-compare src="{esc(src)}"></param-compare>'
                 f'<p class="node">{" &middot; ".join(links)}</p>'
                 f'<div class="decide">'
@@ -689,6 +732,17 @@ document.getElementById("send").addEventListener("click", async (ev) => {{
   .verdict {{ margin-left:.6rem; font-family:system-ui; font-size:.75rem;
               color:#0d0f14; background:#9aa0a6; border-radius:99px; padding:.1rem .5rem; }}
   .hintline {{ margin:.45rem 0 0; font-size:.75rem; color:#6b7280; }}
+  /* パラメータの素性。動画の上に置くが、主役は動画なので控えめに。 */
+  .about {{ margin:.3rem 0; font-size:.83rem; color:#c3c7cc; line-height:1.6;
+            max-width:70ch; }}
+  .about.ja {{ color:#e6e8eb; border-left:3px solid #2f6feb; padding-left:.6rem; }}
+  .spec {{ margin-left:.6rem; color:#9aa0a6; font-size:.78rem;
+           font-variant-numeric:tabular-nums; }}
+  .jaedit {{ margin:.4rem 0 .2rem; max-width:70ch; }}
+  .ja-input {{ width:100%; background:#1b1e25; color:#e6e8eb; font-size:.82rem;
+               border:1px solid #2a2e35; border-radius:5px; padding:.35rem .5rem; }}
+  details {{ margin:.3rem 0 .6rem; }}
+  summary {{ font-size:.78rem; color:#9aa0a6; cursor:pointer; }}
   .decide {{ display:flex; gap:1rem; align-items:center; margin-top:.6rem;
              font-size:.85rem; flex-wrap:wrap; }}
   .decide label {{ display:flex; gap:.3rem; align-items:center; cursor:pointer; }}
@@ -719,17 +773,26 @@ document.getElementById("send").addEventListener("click", async (ev) => {{
   const decisions = [];
   for (const section of document.querySelectorAll("section[data-key]")) {{
     const picked = section.querySelector("input[type=radio]:checked").value;
-    if (picked === "hold") continue;
+    const jaInput = section.querySelector(".ja-input");
+    const ja = jaInput.value.trim();
+    // 日本語の説明は決定と独立に送る。**保留のまま説明だけ書ける**ように
+    // しないと、書くために決めなければならなくなる。
+    const jaChanged = ja !== jaInput.defaultValue.trim();
+    if (picked === "hold" && !jaChanged) continue;
     const note = section.querySelector(".why").value.trim();
-    if (picked !== "accepted" && !note) {{
+    if (picked !== "hold" && picked !== "accepted" && !note) {{
       document.getElementById("status").textContent =
         "理由が要ります: " + section.dataset.key;
       return;
     }}
-    decisions.push({{ key: section.dataset.key, status: picked, note: note }});
+    decisions.push({{
+      key: section.dataset.key, status: picked, note: note,
+      ja: jaChanged ? ja : null,
+    }});
   }}
   if (!decisions.length) {{
-    document.getElementById("status").textContent = "決まっているものがありません。";
+    document.getElementById("status").textContent =
+      "決まっているものも、書き足されたものもありません。";
     return;
   }}
   ev.target.disabled = true;
@@ -769,13 +832,21 @@ document.getElementById("send").addEventListener("click", async (ev) => {{
         for item in decisions:
             node, _, parm = str(item["key"]).rpartition(":")
             status, note = item["status"], (item.get("note") or "").strip()
-            if status not in ("accepted", "retry", "rejected"):
+            ja = item.get("ja")
+            if status not in ("hold", "accepted", "retry", "rejected"):
                 raise ValueError(f"知らない決定です: {status}")
-            if status != "accepted" and not note:
+            if status in ("retry", "rejected") and not note:
                 raise ValueError(f"理由が要ります: {item['key']}")
-            prepared.append((status, node, parm, note))
+            if status == "hold" and ja is None:
+                raise ValueError(f"保留なのに書き足しがありません: {item['key']}")
+            prepared.append((status, node, parm, note, ja))
 
-        for status, node, parm, note in prepared:
+        for status, node, parm, note, ja in prepared:
+            # 日本語の説明は決定と独立。**保留のまま書ける。**
+            if ja is not None:
+                ledger.describe(node, parm, ja)
+            if status == "hold":
+                continue
             if status == "accepted":
                 ledger.mark_watched(node, parm, note)
             elif status == "retry":

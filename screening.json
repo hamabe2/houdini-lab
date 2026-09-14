@@ -4699,7 +4699,8 @@
         "label": "Damping Ratio"
       },
       "out": "vellum-cloth-benddampingratio",
-      "shot_at": "2026-09-14 21:12:39"
+      "shot_at": "2026-09-14 21:12:39",
+      "ja": "曲げ拘束の減衰。拘束を解くときにエネルギーを抜いて、硬い拘束が起こす振動やジッタを抑える。強すぎると拘束そのものが満たされなくなるので 1 未満で使う。"
     },
     "/obj/SUBJECT/CONSTRAINTS:benddampingscalemode": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -5415,5 +5416,5 @@
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
     }
   },
-  "updated": "2026-09-14 21:12:39"
+  "updated": "2026-09-14 21:48:24"
 }
