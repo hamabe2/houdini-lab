@@ -4562,9 +4562,69 @@
       "max": 1.0,
       "help": "Single slider control over the stiffness. As effective changes in stiffness requires painting over orders of magnitude, this has a logarithmic effect.",
       "notes": [],
-      "status": "pending",
-      "reason": "",
-      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+      "status": "screened",
+      "reason": "全ての値で既定値と完全に同一の絵（1画素も変わっていない）",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
+      "proposal": {
+        "values": [
+          0.0,
+          1.0
+        ],
+        "display_values": [
+          0.0,
+          1.0
+        ],
+        "default_index": 1,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "ladder": [
+          0.0,
+          0.0001,
+          0.001,
+          0.01,
+          0.1,
+          1.0,
+          10.0,
+          100.0,
+          1000.0,
+          10000.0
+        ],
+        "neighbour_db": [
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf"
+        ],
+        "open_low": false,
+        "open_high": false,
+        "frame": 24,
+        "camera": "/obj/CAM_angle",
+        "same_db": 50.0,
+        "proposed_at": "2026-09-14 22:59:44"
+      },
+      "verdict": "差なし",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "vs_default_db": [
+        "inf",
+        null
+      ],
+      "neighbour_db": [
+        "inf"
+      ],
+      "broken": {},
+      "frame": 24,
+      "same_db": 50.0,
+      "screened_at": "2026-09-14 23:01:01"
     },
     "/obj/SUBJECT/CONSTRAINTS:benddampingratio": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -4579,7 +4639,7 @@
       "max": 1.0,
       "help": "Stiff constraints tend to vibrate or jitter unacceptably.   Damping reduces this by bleeding energy when evaluating the constraint.  Too much damping can prevent the constraint from being satisfied, however.   Values less than 1 should be used.",
       "notes": [],
-      "status": "shot",
+      "status": "published",
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
       "proposal": {
         "values": [
@@ -4702,7 +4762,8 @@
       "shot_at": "2026-09-14 21:12:39",
       "ja": "曲げ拘束の減衰。拘束を解くときにエネルギーを抜いて、硬い拘束が起こす振動やジッタを抑える。強すぎると拘束そのものが満たされなくなるので 1 未満で使う。",
       "watched_at": "2026-09-14 22:05:12",
-      "watch_note": "ユーザーが動画を見て採用と判断"
+      "watch_note": "ユーザーが動画を見て採用と判断",
+      "published_at": "2026-09-14 22:17:17"
     },
     "/obj/SUBJECT/CONSTRAINTS:benddampingscalemode": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -4979,9 +5040,55 @@
       "max": 90.0,
       "help": "The number of degrees away from the rest angle at which the stiffness of the constraint decreases to zero, or increases from zero to full stiffness, depending on the direction of the dropoff.  A __Decreasing__ dropoff means that the stiffness starts at full strength and decreases to zero at the Dropoff degrees from the rest angle.  An __Increasing__ dropoff means the stiffness starts at zero and i",
       "notes": [],
-      "status": "pending",
-      "reason": "",
-      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+      "status": "screened",
+      "reason": "全ての値で既定値と完全に同一の絵（1画素も変わっていない）",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
+      "proposal": {
+        "values": [
+          0.0
+        ],
+        "display_values": [
+          0.0
+        ],
+        "default_index": 0,
+        "range": [
+          0.0,
+          0.0
+        ],
+        "ladder": [
+          0.0,
+          0.009,
+          0.09,
+          0.9,
+          9.0,
+          90.0
+        ],
+        "neighbour_db": [
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf"
+        ],
+        "open_low": false,
+        "open_high": false,
+        "frame": 24,
+        "camera": "/obj/CAM_angle",
+        "same_db": 50.0,
+        "proposed_at": "2026-09-14 22:57:03"
+      },
+      "verdict": "差なし",
+      "values": [
+        0.0
+      ],
+      "vs_default_db": [
+        null
+      ],
+      "neighbour_db": [],
+      "broken": {},
+      "frame": 24,
+      "same_db": 50.0,
+      "screened_at": "2026-09-14 22:57:54"
     },
     "/obj/SUBJECT/CONSTRAINTS:bendstiffnessdropoffdir": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -5030,9 +5137,55 @@
       "max": 90.0,
       "help": "If enabled, the minimum stiffness value when calculating __Stiffness Dropoff__.",
       "notes": [],
-      "status": "pending",
-      "reason": "",
-      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+      "status": "screened",
+      "reason": "全ての値で既定値と完全に同一の絵（1画素も変わっていない）",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
+      "proposal": {
+        "values": [
+          0.0
+        ],
+        "display_values": [
+          0.0
+        ],
+        "default_index": 0,
+        "range": [
+          0.0,
+          0.0
+        ],
+        "ladder": [
+          0.0,
+          0.009,
+          0.09,
+          0.9,
+          9.0,
+          90.0
+        ],
+        "neighbour_db": [
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf"
+        ],
+        "open_low": false,
+        "open_high": false,
+        "frame": 24,
+        "camera": "/obj/CAM_angle",
+        "same_db": 50.0,
+        "proposed_at": "2026-09-14 22:57:51"
+      },
+      "verdict": "差なし",
+      "values": [
+        0.0
+      ],
+      "vs_default_db": [
+        null
+      ],
+      "neighbour_db": [],
+      "broken": {},
+      "frame": 24,
+      "same_db": 50.0,
+      "screened_at": "2026-09-14 22:57:54"
     },
     "/obj/SUBJECT/CONSTRAINTS:domaxbranchangle": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -5345,9 +5498,69 @@
       "max": 1.0,
       "help": "Single slider to scale the threshold.",
       "notes": [],
-      "status": "pending",
-      "reason": "",
-      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
+      "status": "screened",
+      "reason": "全ての値で既定値と完全に同一の絵（1画素も変わっていない）",
+      "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
+      "proposal": {
+        "values": [
+          0.0,
+          1.0
+        ],
+        "display_values": [
+          0.0,
+          1.0
+        ],
+        "default_index": 1,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "ladder": [
+          0.0,
+          0.0001,
+          0.001,
+          0.01,
+          0.1,
+          1.0,
+          10.0,
+          100.0,
+          1000.0,
+          10000.0
+        ],
+        "neighbour_db": [
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf",
+          "inf"
+        ],
+        "open_low": false,
+        "open_high": false,
+        "frame": 24,
+        "camera": "/obj/CAM_angle",
+        "same_db": 50.0,
+        "proposed_at": "2026-09-14 23:00:55"
+      },
+      "verdict": "差なし",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "vs_default_db": [
+        "inf",
+        null
+      ],
+      "neighbour_db": [
+        "inf"
+      ],
+      "broken": {},
+      "frame": 24,
+      "same_db": 50.0,
+      "screened_at": "2026-09-14 23:01:01"
     },
     "/obj/SUBJECT/CONSTRAINTS:breaktypeall": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -5418,5 +5631,5 @@
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
     }
   },
-  "updated": "2026-09-14 22:05:12"
+  "updated": "2026-09-14 23:01:06"
 }

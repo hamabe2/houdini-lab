@@ -171,6 +171,26 @@ def houdini_pids() -> set[int]:
     return pids
 
 
+def kill_houdini(before: set[int]) -> int:
+    """この呼び出しで起動した houdini.exe を確実に終わらせる。
+
+    **Popen を terminate しても本体が残る。** Houdini は起動時に自分を別
+    プロセスとして立て直すので、掴んでいる PID とセッションの持ち主が一致
+    しない（`houdini_pids()` のコメントと同じ理由）。
+
+    残ると **Apprentice のライセンスを掴んだままになり、次の起動が失敗する。**
+    Ctrl+C で止めたときにここを通らないと、次に回したとき原因の分かりにくい
+    失敗になる。
+    """
+    leftovers = houdini_pids() - before
+    for pid in leftovers:
+        subprocess.run(
+            ["taskkill", "/F", "/PID", str(pid)],
+            capture_output=True, text=True,
+        )
+    return len(leftovers)
+
+
 def minimize_windows(pids: set[int]) -> int:
     """指定 PID のトップレベルウィンドウを最小化し、その数を返す。"""
     if sys.platform != "win32" or not pids:
@@ -235,7 +255,8 @@ def launch(
     config.CACHE_ROOT.mkdir(parents=True, exist_ok=True)
 
     # 起動前の PID を控えておく。ここに無い houdini.exe が今回の分。
-    before = set() if show_window else houdini_pids()
+    # **--show-window でも取る。** 最小化には使わないが、後始末には要る。
+    before = houdini_pids()
 
     where = "" if show_window else "（ウィンドウは最小化します）"
     print(f"houdini.exe を起動します{where}（$HLCACHE = {config.CACHE_ROOT}）")
@@ -247,9 +268,17 @@ def launch(
 
     try:
         _wait(proc, result_path, log_path, timeout_s, None if show_window else before)
+    except KeyboardInterrupt:
+        print("\n  中断（Ctrl+C）。Houdini を終わらせます。")
+        raise
     finally:
         if proc.poll() is None:
             proc.terminate()
+        # **正常終了でもここを通す。** result.json は最後に書かれるので、
+        # 見えた時点で PNG は揃っている。残ったセッションを閉じても失うものは無い。
+        killed = kill_houdini(before)
+        if killed:
+            print(f"  houdini.exe を {killed} 個終了しました")
 
     if not result_path.exists():
         raise SystemExit("撮影結果が出力されませんでした")

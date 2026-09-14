@@ -25,9 +25,14 @@
 
 ## 止まり方
 
-- `--hours` を過ぎたら**新しい候補を始めない**（走っている本撮りは終わらせる）
+- **Ctrl+C でいつでも止めてよい。** 工程ごとに検証リストへ書き戻してあるので、
+  止めた時点までは確定している。起動した Houdini も終了させる
+  （`flipbook.kill_houdini`）。もう一度回せば止めた候補から続く
+- `--hours` を過ぎたら新しい候補を始めない。**篩にも効く**（`--minutes` として
+  渡す）。実測で篩は1件 11〜23 分、本撮りは1本 40 秒なので、時間を食うのは篩
 - `--count` まで篩にかけたら終わる
 - 途中で失敗しても次へ進む。失敗は検証リストに `error_count` として残る
+  （**Ctrl+C は失敗として数えない。**人が止めたことは候補の性質ではない）
 
 **撮影中は `/review/` で承認しないこと。** 検証リストはファイル1本を丸ごと
 読み書きするので、後から保存したほうが勝って片方が消える。
@@ -46,6 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import config  # noqa: E402
 import ledger  # noqa: E402
+from _signals import handle_break  # noqa: E402
 
 TOOLS_DIR = Path(__file__).resolve().parent
 
@@ -146,7 +152,44 @@ def elapsed(started: float) -> str:
     return f"{(time.time() - started) / 60:.0f} 分"
 
 
+def summary(started: float, log_path: Path | None, interrupted: bool) -> None:
+    """ここまでで何が残ったかを出す。
+
+    **Ctrl+C で止めたときも必ず通す。**途中で止めたぶんが宙に浮いて見えると、
+    次に何をすればいいのか分からなくなる。工程ごとに検証リストへ書き戻して
+    あるので、止めた時点までは確定している。
+    """
+    after_await = ledger.awaiting()
+    shot = [e for e in ledger.load().get("entries", {}).values()
+            if e.get("status") == "shot"]
+    unwatched = ledger.unwatched()
+
+    head = "中断（Ctrl+C）" if interrupted else "終了"
+    print(f"\n{'=' * 60}\n  {head} / {elapsed(started)}\n{'=' * 60}")
+    print(f"  撮影済み・未公開   {len(shot)} 件"
+          + (f"  ({', '.join(e['parm'] for e in shot)})" if shot else ""))
+    print(f"  うち未確認の動画   {len(unwatched)} 件")
+    print(f"  承認待ち（静止画） {len(after_await)} 件"
+          + (f"  ({', '.join(e['parm'] for e in after_await)})" if after_await else ""))
+    print(f"  本撮り待ち         {len(ledger.approved())} 件")
+    if interrupted:
+        print("\n  ここまでの判定・撮影は検証リストに残っています"
+              "（1件ごとに書き戻しているため）。")
+        print("  もう一度回せば、止めた候補から続きます。")
+    if log_path:
+        print(f"\n  ログ: {log_path}")
+    print("\n帰宅後にやること:")
+    print(f"  動画を見て決める : {config.BASE_URL}/watch/")
+    print(f"  静止画の承認     : {config.BASE_URL}/review/")
+    print(f"  下書きを読む     : {config.BASE_URL}/")
+    print("  （どれも serve.py を起動しておくこと）")
+
+
 def main() -> int:
+    # **Ctrl+Break でも片付けてから終わる。** 既定のままだとプロセスが即死し、
+    # 起動した Houdini が残ってライセンスを掴んだままになる。
+    handle_break()
+
     ap = argparse.ArgumentParser(
         description="無人モード（篩 → 自動承認 → 本撮り → 下書き）",
     )
@@ -209,68 +252,67 @@ def main() -> int:
         print("    止めてから回すほうが確実です（このまま続けます）。")
 
     # --- 1. 篩にかける -------------------------------------------------------
-    loop = [
-        sys.executable, str(TOOLS_DIR / "screen_loop.py"),
-        "--hip", str(hip), "--count", str(args.count), "--camera", args.camera,
-    ]
-    if args.dry_run:
-        loop.append("--dry-run")
-    run(f"篩にかける（{args.count} 件）", loop, log_path)
-
-    # --- 2. 自動承認 ---------------------------------------------------------
-    # **ここは機械の判定だけで決める。**「採用」以外は screened のまま残して
-    # 帰宅後の判断に回す（ledger.auto_approve のコメント参照）。
-    print(f"\n{'=' * 60}\n  自動承認（verdict が「採用」のものだけ）\n{'=' * 60}")
-    if args.dry_run:
-        ready = [e["parm"] for e in ledger.awaiting() if e.get("verdict") == "採用"]
-        held = [e["parm"] for e in ledger.awaiting() if e.get("verdict") != "採用"]
-        print(f"  承認する: {', '.join(ready) or 'なし'}")
-        print(f"  人に回す: {', '.join(held) or 'なし'}")
-    else:
-        approved = ledger.auto_approve()
-        for entry in approved:
-            print(f"  自動承認: {entry['parm']}  （{entry.get('reason', '')}）")
-        held = [e for e in ledger.awaiting()]
-        print(f"  {len(approved)} 件を承認、{len(held)} 件は人の判断に回しました")
-        for entry in held:
-            print(f"      保留: {entry['parm']}  [{entry.get('verdict', '')}]")
-
-    # --- 3. 本撮り -----------------------------------------------------------
-    if args.no_shoot:
-        print("\n--no-shoot なので本撮りはしません。")
-    elif deadline and time.time() > deadline and not args.dry_run:
-        # 時間切れでも**本撮りには入らない**。走り出すと1本あたり数十分かかり、
-        # 「帰ってきたらまだ回っていた」ことになる。承認済みは残るので、
-        # 次に shoot.py を叩けば撮れる。
-        print(f"\n時間切れ（{elapsed(started)}）なので本撮りには入りません。"
-              "  承認済みは残っています: tools\\shoot.py")
-    else:
-        shoot = [sys.executable, str(TOOLS_DIR / "shoot.py"), "--frames", args.frames]
+    #
+    # **時間の大半はここ。**実測で1件 11〜23 分（`propose_values` が梯子を
+    # 回すため）。本撮りは1本 40 秒しかかからない。だから `--hours` は
+    # 篩にも渡さないと意味がない。
+    # **Ctrl+C はいつ来てもよい。** 工程ごとに検証リストへ書き戻してあるので、
+    # 止めた時点までは確定している。ここで捕まえるのは traceback を見せない
+    # ためと、「何が残ったか」を必ず出すため。
+    try:
+        loop = [
+            sys.executable, str(TOOLS_DIR / "screen_loop.py"),
+            "--hip", str(hip), "--count", str(args.count), "--camera", args.camera,
+        ]
+        if args.hours:
+            # 本撮りと下書きのぶんを少し残す（1本 40 秒 x 件数 + 余裕）。
+            loop += ["--minutes", f"{max(args.hours * 60 - 5, 1):.0f}"]
         if args.dry_run:
-            shoot.append("--dry-run")
-        run("承認済みをまとめて本撮り", shoot, log_path)
+            loop.append("--dry-run")
+        run(f"篩にかける（{args.count} 件）", loop, log_path)
 
-        # --- 4. 下書き -------------------------------------------------------
-        drafts = [sys.executable, str(TOOLS_DIR / "draft.py")]
-        if not args.dry_run:
-            run("撮影済みから記事の下書きを作る", drafts, log_path)
+        # --- 2. 自動承認 -----------------------------------------------------
+        # **ここは機械の判定だけで決める。**「採用」以外は screened のまま残して
+        # 帰宅後の判断に回す（ledger.auto_approve のコメント参照）。
+        print(f"\n{'=' * 60}\n  自動承認（verdict が「採用」のものだけ）\n{'=' * 60}")
+        if args.dry_run:
+            ready = [e["parm"] for e in ledger.awaiting() if e.get("verdict") == "採用"]
+            held = [e["parm"] for e in ledger.awaiting() if e.get("verdict") != "採用"]
+            print(f"  承認する: {', '.join(ready) or 'なし'}")
+            print(f"  人に回す: {', '.join(held) or 'なし'}")
+        else:
+            approved = ledger.auto_approve()
+            for entry in approved:
+                print(f"  自動承認: {entry['parm']}  （{entry.get('reason', '')}）")
+            held = [e for e in ledger.awaiting()]
+            print(f"  {len(approved)} 件を承認、{len(held)} 件は人の判断に回しました")
+            for entry in held:
+                print(f"      保留: {entry['parm']}  [{entry.get('verdict', '')}]")
 
-    # --- まとめ -------------------------------------------------------------
-    after_await = ledger.awaiting()
-    shot = [e for e in ledger.load().get("entries", {}).values()
-            if e.get("status") == "shot"]
+        # --- 3. 本撮り -------------------------------------------------------
+        if args.no_shoot:
+            print("\n--no-shoot なので本撮りはしません。")
+        elif deadline and time.time() > deadline and not args.dry_run:
+            # 時間切れでも**本撮りには入らない**。承認済みは残るので、
+            # 次に shoot.py を叩けば撮れる。
+            print(f"\n時間切れ（{elapsed(started)}）なので本撮りには入りません。"
+                  "  承認済みは残っています: tools\\shoot.py")
+        else:
+            shoot = [sys.executable, str(TOOLS_DIR / "shoot.py"),
+                     "--frames", args.frames]
+            if args.dry_run:
+                shoot.append("--dry-run")
+            run("承認済みをまとめて本撮り", shoot, log_path)
 
-    print(f"\n{'=' * 60}\n  {elapsed(started)}\n{'=' * 60}")
-    print(f"  撮影済み・未公開   {len(shot)} 件"
-          + (f"  ({', '.join(e['parm'] for e in shot)})" if shot else ""))
-    print(f"  承認待ち（静止画） {len(after_await)} 件"
-          + (f"  ({', '.join(e['parm'] for e in after_await)})" if after_await else ""))
-    print(f"  本撮り待ち         {len(ledger.approved())} 件")
-    print("\n帰宅後にやること:")
-    print(f"  動画を見て決める : {config.BASE_URL}/watch/")
-    print(f"  静止画の承認     : {config.BASE_URL}/review/")
-    print(f"  下書きを読む     : {config.BASE_URL}/")
-    print("  （どれも serve.py を起動しておくこと）")
+            # --- 4. 下書き ---------------------------------------------------
+            drafts = [sys.executable, str(TOOLS_DIR / "draft.py")]
+            if not args.dry_run:
+                run("撮影済みから記事の下書きを作る", drafts, log_path)
+    except KeyboardInterrupt:
+        summary(started, log_path, interrupted=True)
+        return 130                                   # 128 + SIGINT
+
+    summary(started, log_path, interrupted=False)
     return 0
 
 

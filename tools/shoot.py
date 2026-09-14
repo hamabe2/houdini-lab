@@ -43,6 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import config  # noqa: E402
 import ledger  # noqa: E402
+from _signals import handle_break  # noqa: E402
 from review import fmt_value  # noqa: E402
 
 TOOLS_DIR = Path(__file__).resolve().parent
@@ -182,6 +183,8 @@ def run_session(
 
 
 def main() -> int:
+    handle_break()   # Ctrl+Break でも Houdini を残さない
+
     ap = argparse.ArgumentParser(
         description="承認済みをまとめて本撮りする（approved → shot）",
     )
@@ -266,20 +269,29 @@ def main() -> int:
     done: list[dict] = []
     failed: list[tuple[str, str]] = []
 
-    for i, ((hip, camera), group) in enumerate(sessions.items(), 1):
-        if not hip:
-            failed += [(job["out"], "検証リストに hip がありません") for job in group]
-            continue
+    stopped = False
+    try:
+        for i, ((hip, camera), group) in enumerate(sessions.items(), 1):
+            if not hip:
+                failed += [(job["out"], "検証リストに hip がありません") for job in group]
+                continue
 
-        ok, bad = run_session(group, hip, camera, args, tag=f"s{i}")
-        failed += bad
+            ok, bad = run_session(group, hip, camera, args, tag=f"s{i}")
+            failed += bad
 
-        # **1セッション終わるごとに書き戻す。** 途中で止めても、撮れた分が
-        # 「撮ったのに approved のまま」で残らないようにする。
-        for job in group:
-            if job["out"] in ok:
-                ledger.mark_shot(job["entry"]["node"], job["entry"]["parm"], job["out"])
-                done.append(job)
+            # **1セッション終わるごとに書き戻す。** 途中で止めても、撮れた分が
+            # 「撮ったのに approved のまま」で残らないようにする。
+            for job in group:
+                if job["out"] in ok:
+                    ledger.mark_shot(
+                        job["entry"]["node"], job["entry"]["parm"], job["out"],
+                    )
+                    done.append(job)
+    except KeyboardInterrupt:
+        # 撮りかけの本は approved のまま残る（次に叩けばまた撮れる）。
+        # Houdini は flipbook.launch() の finally が終わらせている。
+        stopped = True
+        print("\n中断（Ctrl+C）。撮り終えた本だけ記録しました。")
 
     print(f"\n=== {len(done)} / {len(jobs)} 本 / {(time.time() - started) / 60:.1f} 分 ===")
     for job in done:
@@ -295,7 +307,7 @@ def main() -> int:
         for job in done:
             print(f"  .venv\\Scripts\\python.exe tools\\ledger.py publish "
                   f"--parm {job['entry']['parm']}")
-    return 0 if not failed else 1
+    return 130 if stopped else (0 if not failed else 1)
 
 
 if __name__ == "__main__":

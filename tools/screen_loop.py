@@ -51,6 +51,7 @@ import ledger  # noqa: E402
 import propose_values  # noqa: E402
 import review  # noqa: E402
 import screen  # noqa: E402
+from _signals import handle_break  # noqa: E402
 from flipbook import DEFAULT_HIDDEN  # noqa: E402
 from propose_values import DECADES  # noqa: E402
 from setup_sheet import SHEET_DIR, write_sheet  # noqa: E402
@@ -67,6 +68,10 @@ def elapsed(started: float) -> str:
 
 
 def main() -> int:
+    # 親（unattended.py）から呼ばれても、単体で叩かれても同じように止まる。
+    # **シグナルハンドラは子に継承されない**ので、ここでも呼ぶ。
+    handle_break()
+
     ap = argparse.ArgumentParser(
         description="候補を N 件まとめて篩にかける（propose → sheet → screen）",
     )
@@ -83,6 +88,11 @@ def main() -> int:
     ap.add_argument(
         "--dry-run", action="store_true",
         help="何を回すかだけ表示して、Houdini を起動しない",
+    )
+    ap.add_argument(
+        "--minutes", type=float, default=0,
+        help="これを過ぎたら次の候補を始めない（0 で無制限）。"
+             "1件は実測 11〜23 分かかる",
     )
 
     # 以下は propose_values.py にそのまま渡す。
@@ -142,12 +152,26 @@ def main() -> int:
         shutil.rmtree(RUN_DIR, ignore_errors=True)
 
     started = time.time()
+    deadline = started + args.minutes * 60 if args.minutes else None
+    if deadline:
+        print(f"  {time.strftime('%H:%M', time.localtime(deadline))} を過ぎたら"
+              "次の候補を始めません")
     cells: list[dict] = []
     done: list[dict] = []
     failed: list[tuple[dict, str]] = []
     record: dict = {}
+    stopped = ""
 
     for i, entry in enumerate(picked, 1):
+        # **1件の途中では切らない。** 撮った梯子を捨てることになるうえ、
+        # 判定を書き戻す前に止めると同じ sim をもう一度回す羽目になる。
+        # 区切りは候補と候補の間だけ。
+        if deadline and time.time() > deadline:
+            stopped = (f"時間切れ（{args.minutes:.0f} 分）。"
+                       f"残り {len(picked) - i + 1} 件は次に回します")
+            print(f"\n{stopped}")
+            break
+
         node, parm = entry["node"], entry["parm"]
         print(f"\n=== [{i}/{len(picked)}] {node} / {parm} "
               f"（経過 {elapsed(started)}）===")
@@ -171,6 +195,13 @@ def main() -> int:
                 hip, node, parm, call_args,
                 work_root=RUN_DIR / f"c{i}", probe_dir=RUN_DIR / "probe" / f"c{i}",
             )
+        except KeyboardInterrupt:
+            # **失敗として数えない。** 人が止めたことは候補の性質ではないので、
+            # error_count を上げると次から飛ばされるようになってしまう。
+            # Houdini は flipbook.launch() の finally が終わらせている。
+            stopped = f"中断（Ctrl+C）。{parm} の途中まで（判定は残っていない）"
+            print(f"\n{stopped}")
+            break
         except SystemExit as exc:          # 梯子が作れない・撮れ高が合わない等
             message = str(exc)
             print(f"  失敗: {message}")
@@ -215,7 +246,9 @@ def main() -> int:
                 review.keep(picked_cells, node, parm)
         print(f"  ここまで {elapsed(one)}")
 
-    print(f"\n=== {len(picked)} 件 / {elapsed(started)} ===")
+    print(f"\n=== {len(done) + len(failed)} / {len(picked)} 件 / {elapsed(started)} ===")
+    if stopped:
+        print(f"  {stopped}")
     for result in done:
         print(f"  [{result['verdict']:<14}] {result['parm']}  {result['reason']}")
     for entry, message in failed:

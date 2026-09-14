@@ -55,6 +55,9 @@ echo.
 echo   Houdini will open and minimize itself. Do NOT touch it.
 echo   Stop serve.py first if you can (it may lock media/).
 echo.
+echo   To stop: press Ctrl+C in this window. Do NOT close it with [X]
+echo   (that leaves houdini.exe running and holding the license).
+echo.
 pause
 echo.
 .venv\Scripts\python.exe tools\unattended.py --hip %HIP% --count %COUNT% --hours %HOURS% --log
