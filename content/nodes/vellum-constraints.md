@@ -1,6 +1,9 @@
 ---
 title: Vellum Constraints
 node: vellumconstraints
+# 検証シーンでこのノードにあたるパス。下書き生成（tools/draft.py）が
+# 「この候補はどの記事に入るのか」をここで引く。
+scene_node: /obj/SUBJECT/CONSTRAINTS
 context: SOP
 houdini_version: "21.0.729"
 tags: [vellum, cloth]

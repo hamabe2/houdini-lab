@@ -18,6 +18,7 @@
     <li class="card">
       <a href="{{ url('nodes/' ~ p.slug ~ '/') }}">
         <span class="card-title">{{ p.title }}</span>
+        {% if p.draft %}<span class="draft-badge">下書き</span>{% endif %}
         {% if p.node %}<code class="card-node">{{ p.node }}</code>{% endif %}
       </a>
       {% if p.viewers %}

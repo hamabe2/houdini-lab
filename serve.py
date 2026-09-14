@@ -26,6 +26,12 @@ import config  # noqa: E402
 import ledger  # noqa: E402
 import review  # noqa: E402
 
+# **下書きはここでだけ見える。** 公開ビルド（GitHub Actions）はこれを立てない
+# ので、content/drafts/ の記事も front matter に draft: true がある記事も
+# site/ に出ない。無人モードが人の目を通さずに書いた記事が公開される事故を、
+# 運用ではなく仕組みで止めている。
+config.SHOW_DRAFTS = True
+
 PORT = 8765
 WATCH = ["content", "templates", "assets", "media", "config.py", "build.py"]
 PREFIX = config.BASE_URL.rstrip("/")
@@ -187,6 +193,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 review.REVIEW_DIR,
                 self.path[len(f"{PREFIX}/review/"):].split("?")[0],
             )
+            return
+
+        # 撮影済みの動画を見て決める画面。**静止画の承認（/review/）とは
+        # 別の工程。**あちらは「撮ってよいか」を1フレームで決め、ここは
+        # 「撮れたものが使えるか」を動画で決める。無人モードは前者を機械に
+        # 任せるので、人が絵を見る場所は実質ここになる。
+        if self.path.split("?")[0].rstrip("/") == f"{PREFIX}/watch".rstrip("/"):
+            self.send_watch_index()
             return
 
         if self.path.rstrip("/") == f"{PREFIX}/__gen__".rstrip("/"):
@@ -594,8 +608,197 @@ document.getElementById("send").addEventListener("click", async (ev) => {{
         self.end_headers()
         self.wfile.write(data)
 
+    # --- 動画を見て決める ----------------------------------------------------
+
+    def send_watch_index(self) -> None:
+        """撮れた動画を見て、公開に進めるか撮り直すかを決める画面。
+
+        **`/review/` とは別の工程。**あちらは 1 フレームの静止画で「撮って
+        よいか」を決める。ここは撮れた 48 フレームを見て「使えるか」を決める。
+        無人モードは前者を機械に任せるので、**人が絵を見るのは実質ここだけ**に
+        なる。だから判定の数字ではなく動画そのものを主役に置く。
+        """
+        rows = ledger.unwatched()
+        blocks = []
+        for entry in rows:
+            out = entry.get("out", "")
+            src = config.media_url(f"{out}.json")
+            key = esc(ledger.key_of(entry["node"], entry["parm"]))
+
+            facts = []
+            if entry.get("decided_by") == "auto":
+                facts.append("<b>機械が承認した</b>（静止画も人は見ていない）")
+            if entry.get("verdict"):
+                facts.append(esc(entry["verdict"]))
+            if entry.get("reason"):
+                facts.append(esc(entry["reason"]))
+            if entry.get("shot_at"):
+                facts.append(f"撮影 {esc(entry['shot_at'])}")
+
+            draft_path = config.DRAFT_DIR / f"draft-{out}.md"
+            links = [f'<code>{esc(out)}.mp4</code>']
+            if draft_path.exists():
+                links.append(
+                    f'<a href="{PREFIX}/nodes/draft-{esc(out)}/">下書きを読む</a>'
+                )
+
+            blocks.append(
+                f'<section data-key="{key}">'
+                f'<h2>{esc(entry["parm"])}'
+                f'<span class="verdict">{esc(entry.get("label", ""))}</span></h2>'
+                f'<p class="node">{" &middot; ".join(facts)}</p>'
+                f'<param-compare src="{esc(src)}"></param-compare>'
+                f'<p class="node">{" &middot; ".join(links)}</p>'
+                f'<div class="decide">'
+                f'<label><input type="radio" name="{key}" value="hold" checked>保留</label>'
+                f'<label><input type="radio" name="{key}" value="accepted">採用（記事にする）</label>'
+                f'<label><input type="radio" name="{key}" value="retry">撮り直し</label>'
+                f'<label><input type="radio" name="{key}" value="rejected">却下</label>'
+                f'<input type="text" class="why" '
+                f'placeholder="理由・気づいたこと（撮り直し・却下には必須）">'
+                f"</div>"
+                f'<p class="node hintline">'
+                f"撮り直し = 同じ動画 ID で撮り直す（候補は残る。刻みや範囲を変える）"
+                f"&nbsp;/&nbsp;却下 = この候補自体をやめる</p>"
+                f"</section>"
+            )
+
+        if not rows:
+            body = (
+                '<p class="empty">見ていない動画はありません。<br>'
+                "<code>python tools/unattended.py --hip scenes/vellum_cloth.hip</code><br>"
+                "を回すと、ここに溜まります。</p>"
+            )
+        else:
+            body = "\n".join(blocks)
+
+        html_text = f"""<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>動画を見て決める | Houdini Lab</title>
+<style>
+  body {{ margin:0; padding:1.5rem 1.5rem 5rem; background:#12141a; color:#e6e8eb;
+         font-family:system-ui,"Segoe UI","Yu Gothic UI",sans-serif; }}
+  h1 {{ font-size:1.05rem; margin:0 0 .3rem; }}
+  h2 {{ font-size:.95rem; margin:0 0 .2rem; font-family:ui-monospace,monospace; }}
+  .hint, .node {{ color:#9aa0a6; font-size:.8rem; margin:0 0 1rem; }}
+  .node {{ margin:.4rem 0; }}
+  a {{ color:#6ea8fe; }}
+  section {{ margin:0 0 2.5rem; border-top:1px solid #2a2e35; padding-top:1rem;
+             max-width:900px; }}
+  .verdict {{ margin-left:.6rem; font-family:system-ui; font-size:.75rem;
+              color:#0d0f14; background:#9aa0a6; border-radius:99px; padding:.1rem .5rem; }}
+  .hintline {{ margin:.45rem 0 0; font-size:.75rem; color:#6b7280; }}
+  .decide {{ display:flex; gap:1rem; align-items:center; margin-top:.6rem;
+             font-size:.85rem; flex-wrap:wrap; }}
+  .decide label {{ display:flex; gap:.3rem; align-items:center; cursor:pointer; }}
+  .why {{ flex:1 1 18rem; background:#1b1e25; color:#e6e8eb;
+          border:1px solid #2a2e35; border-radius:5px; padding:.35rem .5rem; }}
+  code {{ background:#22262d; padding:.12em .4em; border-radius:4px; }}
+  .empty {{ color:#9aa0a6; line-height:2; }}
+  .bar {{ position:fixed; left:0; right:0; bottom:0; padding:.7rem 1.5rem;
+          background:#191c22; border-top:1px solid #2a2e35; display:flex;
+          gap:1rem; align-items:center; }}
+  button {{ background:#2f6feb; color:#fff; border:0; border-radius:6px;
+            padding:.45rem 1.1rem; font-size:.9rem; cursor:pointer; }}
+  button:disabled {{ background:#2a2e35; color:#6b7280; cursor:default; }}
+  #status {{ color:#9aa0a6; font-size:.82rem; }}
+</style></head><body>
+<h1>動画を見て決める</h1>
+<p class="hint">撮影済みで未確認 {len(rows)} 件 &middot;
+<a href="{PREFIX}/review/">静止画の承認</a> &middot;
+<a href="{PREFIX}/">サイト（下書きもここ）</a></p>
+{body}
+<div class="bar">
+  <button id="send">決定を送る</button>
+  <span id="status">保留のままのものは何も変わりません。</span>
+</div>
+<script src="{PREFIX}/assets/param-compare.js"></script>
+<script>
+document.getElementById("send").addEventListener("click", async (ev) => {{
+  const decisions = [];
+  for (const section of document.querySelectorAll("section[data-key]")) {{
+    const picked = section.querySelector("input[type=radio]:checked").value;
+    if (picked === "hold") continue;
+    const note = section.querySelector(".why").value.trim();
+    if (picked !== "accepted" && !note) {{
+      document.getElementById("status").textContent =
+        "理由が要ります: " + section.dataset.key;
+      return;
+    }}
+    decisions.push({{ key: section.dataset.key, status: picked, note: note }});
+  }}
+  if (!decisions.length) {{
+    document.getElementById("status").textContent = "決まっているものがありません。";
+    return;
+  }}
+  ev.target.disabled = true;
+  document.getElementById("status").textContent = "送っています…";
+  try {{
+    const r = await fetch("{PREFIX}/watch/decide", {{
+      method: "POST",
+      headers: {{ "Content-Type": "application/json" }},
+      body: JSON.stringify({{ decisions }}),
+    }});
+    const out = await r.json();
+    if (!r.ok) throw new Error(out.error || r.status);
+    location.reload();
+  }} catch (e) {{
+    ev.target.disabled = false;
+    document.getElementById("status").textContent = "失敗しました: " + e.message;
+  }}
+}});
+</script>
+</body></html>"""
+
+        data = html_text.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def handle_watch_decide(self, decisions: list) -> int:
+        """動画を見た結果を記録する。
+
+        **「採用」は status を動かさない。**動画が使えることと記事になった
+        ことは別で、公開は記事を書いて push して初めて成る。ここで立てるのは
+        「もう見た」という印だけ。
+        """
+        prepared = []
+        for item in decisions:
+            node, _, parm = str(item["key"]).rpartition(":")
+            status, note = item["status"], (item.get("note") or "").strip()
+            if status not in ("accepted", "retry", "rejected"):
+                raise ValueError(f"知らない決定です: {status}")
+            if status != "accepted" and not note:
+                raise ValueError(f"理由が要ります: {item['key']}")
+            prepared.append((status, node, parm, note))
+
+        for status, node, parm, note in prepared:
+            if status == "accepted":
+                ledger.mark_watched(node, parm, note)
+            elif status == "retry":
+                # 撮り直しは提案からやり直す。**動画 ID は残す**ので、
+                # 下書きや記事のリンクを付け替えずに済む。
+                ledger.retry(node, parm, note)
+            else:
+                ledger.decide(node, parm, "rejected", note)
+        return len(prepared)
+
     def do_POST(self):
         """承認画面からの決定を受ける。**ローカル専用の書き込み口。**"""
+        if self.path.split("?")[0].rstrip("/") == f"{PREFIX}/watch/decide":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                payload = json.loads(self.rfile.read(length) or b"{}")
+                done = self.handle_watch_decide(payload.get("decisions") or [])
+                review.prune()
+                self.reply_json(200, {"ok": True, "count": done})
+            except Exception as exc:
+                self.reply_json(400, {"ok": False, "error": f"{type(exc).__name__}: {exc}"})
+            return
+
         if self.path.split("?")[0].rstrip("/") != f"{PREFIX}/review/decide":
             self.send_error(404, "not found")
             return
@@ -693,6 +896,7 @@ def main() -> int:
         print(f"サイト     : http://127.0.0.1:{PORT}{PREFIX}/")
         print(f"プレビュー : http://127.0.0.1:{PORT}{PREFIX}/preview/")
         print(f"承認       : http://127.0.0.1:{PORT}{PREFIX}/review/")
+        print(f"動画を見る : http://127.0.0.1:{PORT}{PREFIX}/watch/")
         print("(Ctrl+C で終了)")
         try:
             httpd.serve_forever()

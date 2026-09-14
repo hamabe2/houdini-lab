@@ -4,7 +4,14 @@
 <article class="node-page">
   <header class="page-head">
     <p class="crumb"><a href="{{ url('nodes/') }}">ノード</a></p>
-    <h1>{{ page.title }}</h1>
+    <h1>{{ page.title }}{% if page.draft %} <span class="draft-badge">下書き</span>{% endif %}</h1>
+    {% if page.draft %}
+    <p class="draft-note">
+      無人モードが機械の判定だけで作った下書きです。<b>公開されません</b>
+      （ローカルの <code>serve.py</code> でしか表示されない）。動画を見て、
+      着眼点を書き足してから本体の記事へ移してください。
+    </p>
+    {% endif %}
     <dl class="meta">
       {% if page.node %}<dt>ノード</dt><dd><code>{{ page.node }}</code></dd>{% endif %}
       {% if page.context %}<dt>コンテキスト</dt><dd>{{ page.context }}</dd>{% endif %}

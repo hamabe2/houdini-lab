@@ -122,8 +122,18 @@ def plan(rows: list[dict], overrides: dict[str, str]) -> list[dict]:
 
 
 def existing(jobs: list[dict]) -> list[str]:
-    """すでに media にある動画 ID。**撮り直しは黙って上書きしない。**"""
-    return [job["out"] for job in jobs if (config.MEDIA_DIR / f"{job['out']}.mp4").exists()]
+    """上書きしてよくない動画 ID を返す。
+
+    **同じ候補が前に撮った ID は黙って上書きしてよい。**`/watch/` で
+    「撮り直し」を選ぶと同じ ID のまま提案からやり直すので、そこで毎回
+    `--overwrite` を要求すると撮り直しが通らない。止めるのは**別の候補が
+    使っている ID** を潰そうとしたときだけ。
+    """
+    return [
+        job["out"] for job in jobs
+        if (config.MEDIA_DIR / f"{job['out']}.mp4").exists()
+        and job["entry"].get("out") != job["out"]
+    ]
 
 
 def group_key(entry: dict) -> tuple[str, str]:

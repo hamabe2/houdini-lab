@@ -117,6 +117,27 @@ h3 { font-size: 1.05rem; margin: 2rem 0 0.5rem; }
 .tag:hover { border-color: var(--accent); text-decoration: none; }
 .tag .count { opacity: 0.6; }
 
+/* 下書きの印。**ローカルでしか出ない**（config.SHOW_DRAFTS）。
+   無人モードが作った、まだ人が絵を見ていない記事につく。 */
+.draft-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: #b45309;
+  color: #fff;
+  vertical-align: middle;
+}
+.draft-note {
+  border: 1px solid #b45309;
+  border-left-width: 4px;
+  border-radius: 6px;
+  padding: 0.7rem 0.9rem;
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
 /* --- toc --- */
 
 .toc {

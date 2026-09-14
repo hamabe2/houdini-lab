@@ -33,6 +33,9 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
 - **承認の次の口ができた。** `shoot.py` が承認済みを1回の Houdini 起動で
   まとめて本撮りし、`approved → shot` まで進める。記事に載せたら
   `ledger.py publish` で `published`
+- **無人モードがある**（`unattended.py`）。外出中に篩 → 自動承認 → 本撮り →
+  記事の下書きまで通す。**人が絵を見るのは帰宅後の `/watch/`**（動画）に
+  移った。`benddampingratio` は撮影済み・未公開で、下書きが1本ある
 
 **工程の自動化の度合い**
 
@@ -42,16 +45,19 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
 | 振る値の刻みを決める（`propose_values.py`） | 自動 |
 | 篩（`setup_sheet.py`）・判定（`screen.py`） | 自動 |
 | 上3つを N件まとめて回す（`screen_loop.py`） | 自動 |
-| 判定結果の承認（`/review/` ・ `ledger.py approve`） | **人間・まとめて1回** |
+| 判定結果の承認（`/review/` ・ `ledger.py approve`） | **人間・まとめて1回**（無人モードでは「採用」だけ自動） |
 | 承認済みをまとめて本撮り（`shoot.py`）| 自動 |
-| JSON / 記事 / push | **手作業** |
+| 記事の下書き（`draft.py`）| 自動。**ただし数字だけ** |
+| 動画を見て公開に進める（`/watch/`）| **人間** |
+| 記事に言葉を足す / push | **手作業** |
 
 **次にやること**
 
-1. JSON / 記事の生成。**ただし記事は実測を書く工程なので、機械化できるのは
-   数字の部分だけ**（`bendrestscale` では hython で二面角を測って初めて
-   「触っても無駄」と書けた）。`shoot.py` が `shot`（撮影済み・未公開）まで
-   進めるので、そこから先が残っている
+1. 下書きから本体の記事へ移す工程。いまは人が `content/drafts/` を読んで
+   `content/nodes/` へ書き写す。**着眼点を書く部分は機械化しない**（実測を
+   書く工程なので。`bendrestscale` では hython で二面角を測って初めて
+   「触っても無駄」と書けた）が、移動そのものは自動化できる
+2. 無人モードを実戦で1晩回して、何件詰まるかを見る
 
 ## このプロジェクトの仕組み
 
@@ -131,6 +137,14 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 .venv\Scripts\python.exe tools\review.py --approved   # 本撮り待ちの一覧
 .venv\Scripts\python.exe tools\review.py --shot       # 撮影済み・未公開（記事を書く番）
 .venv\Scripts\python.exe tools\ledger.py publish --parm benddampingratio  # 公開したら
+
+# 無人モード（外出中に篩 → 自動承認 → 本撮り → 記事の下書きまで通す）
+.venv\Scripts\python.exe tools\unattended.py --hip scenes\vellum_cloth.hip --count 6 --hours 4
+#   --dry-run で「何を回すか」だけ確認できる
+#   --camera は省略してよい（検証リストで一番使われているカメラを既定にする）
+#   帰宅後 : http://127.0.0.1:8765/houdini-lab/watch/   ← 動画を見て決める
+.venv\Scripts\python.exe tools\ledger.py approve --auto   # 「採用」だけ機械が承認
+.venv\Scripts\python.exe tools\draft.py                   # 撮影済みから記事の下書き
 
 # 検証リスト（screening.json）。何を調べ、何を落とし、なぜかを残す
 .venv\Scripts\python.exe tools\ledger.py add --hip scenes\vellum_cloth.hip --node /obj/SUBJECT/SOLVER
@@ -411,6 +425,8 @@ Light -> グリッド RGB(255,255,255) alpha 40   （純白で濃い）
 | flipbook が終わらない | GUI がダイアログを出して止まっている。`tools/_cache/shots/<out>/flipbook.log` を見る。`--timeout` で打ち切られる |
 | setup シートに前回のパラメータの画像が残る | `serve.py` がファイルを掴んでいて `write_sheet()` の `rmtree(ignore_errors=True)` が消しきれない。**`sheet.json` は今回の分しか載せないのでページには出ない**（実害なし）。消したいならサーバーを止める |
 | JSON 書き込みで PermissionError | `serve.py` が `media/` を監視して再ビルド中に掴んでいる。撮影時はサーバーを止めるか、リトライに任せる |
+| 下書きがサイトに出ない | **仕様。** `config.SHOW_DRAFTS` を立てるのはローカルの `serve.py` だけ。`build.py` を直接叩くと下書きは落ちる（「下書き N ページを除いた」と出る）。見たいなら `serve.py` 越しに見る |
+| 撮っただけの動画が公開されてしまった | `media/*.mp4` は下書きの仕組みの外。**`git add -A` でコミットに入る。** 公開が決まるまで入れない（`review.py --shot` で未公開の一覧が出る） |
 | 動画の最初のフレームで止まって再生されない（p=0 だけ動く） | **ローカルの `serve.py` が HTTP Range に応えていない。** `SimpleHTTPRequestHandler` は Range を無視して 200 で全体を返し、ブラウザはシーク不可と判断する。**GitHub Pages は Range に対応しているのでローカルでしか再現しない。**`serve.py` の `send_partial()` が担当 |
 
 ## 比較コンテンツの作り方
@@ -532,6 +548,19 @@ ledger.py publish   記事に載せたことを記録する → published
 pending → screened ─┼→ pending（やり直し）           候補は生きている。提案が悪い
                     └→ rejected                     候補自体に価値がない
 ```
+
+**人が絵を見る場所は2つあり、別の工程。**
+
+| | `/review/` | `/watch/` |
+|---|---|---|
+| 見るもの | 静止画1フレーム | 撮れた動画（48フレーム） |
+| 決めること | **撮ってよいか** | **撮れたものが使えるか** |
+| 決定 | 承認 / やり直し / 却下 | 採用 / 撮り直し / 却下 |
+| 無人モード | **機械が代行**（「採用」だけ） | **人がやる**（代行しない） |
+
+`/watch/` の「採用」は status を動かさない。立つのは `watched_at` の印だけで、
+**動画が使えることと記事になったことは別**だから。公開は記事を書いて push して
+初めて成り、そこで `ledger.py publish` が `published` に上げる。
 
 **`shot`（撮影済み・未公開）を挟むこと。** 撮り終えたものを approved のままに
 すると `review.py --approved` が「本撮りするならこれ」と同じものを出し続け、
@@ -672,6 +701,61 @@ stiffness 系は「数値の入力欄」と「× 10^N のメニュー（`<parm>e
 
 **シーンを作ったら、sim を回す前に `preview.py` で静止画を出してユーザーに見せて確認を取る。**
 全撮影を回してから問題に気づくのは時間の無駄。
+
+## 無人モード（`unattended.py`）
+
+PC の前にいられないときに、篩から記事の下書きまで通す。
+
+```
+screen_loop.py  候補を篩にかけて判定する
+      ↓
+自動承認        verdict が「採用」のものだけ（ledger.auto_approve）
+      ↓
+shoot.py        承認済みを1回の起動でまとめて本撮り → shot
+      ↓
+draft.py        撮影済みから記事の下書きを作る（公開はされない）
+```
+
+帰宅後は **`/watch/` で動画を見て**、採用・撮り直し・却下を決める。
+
+- **自動で通すのは verdict が「採用」だけ。**「採用（段階に無駄あり）」と
+  「破綻」は `screened` のまま残り、帰宅後に `/review/` で静止画を見て決める。
+  本撮りは1本あたり 5値 x 48フレームの sim なので、外れを撮る時間が惜しい。
+  **機械が勝手に捨てはしない**（「差なし」だけは元から人に見せない）
+- **誰が決めたかを残す**（`decided_by`）。`auto` なら `/watch/` に
+  「機械が承認した」と出る。人が絵を見ていないことが分かる必要がある
+- **`--camera` は省略してよい。** 検証リストで一番使われているカメラを既定に
+  する（`config.DEFAULT_CAMERA` は `CAM_main` だが布は `CAM_angle`。何時間も
+  無人で回るので、既定に頼ると丸ごと無駄になる）
+- **`--hours` を過ぎても本撮りには入らない。** 走り出すと1本あたり数十分で、
+  「帰ってきたらまだ回っていた」ことになる。承認済みは残るので次に `shoot.py`
+- **出力は行バッファにしてある。** 既定のブロックバッファだと子プロセスの
+  出力が先に出て、どの見出しの下で何が起きたのか読めなくなる
+
+### 下書きが公開されない仕組み
+
+無人モードは人が絵を見ないまま記事を作る。**そのまま公開されると「誰も見て
+いない記事がサイトに出る」**ので、運用ではなく仕組みで止めている。
+
+- 下書きは `content/drafts/` に出て、front matter に `draft: true` が入る
+- `build.py` は `config.SHOW_DRAFTS` が無ければ**それらを落とす**
+  （`content/nodes/` にあっても `draft: true` なら落ちる）
+- `SHOW_DRAFTS` を立てるのは**ローカルの `serve.py` だけ**。GitHub Actions は
+  立てないので、**push しても下書きは公開されない**
+- 人が動画を見て言葉を足し、本体の記事へ移して初めて公開される
+
+**`media/*.mp4` はこの仕組みの外にある。** コミットすれば URL を知る人には
+届くし、GitHub Pages の 1GB を食う。**撮っただけの動画は公開が決まるまで
+コミットしないこと**（`git add -A` に注意。`review.py --shot` で一覧できる）。
+
+### 下書きに何が書けて、何が書けないか
+
+書けるのは**測った数字だけ**。振った値・既定値・隣どうしの dB・有効域・公式の
+説明は検証リストと `media/<id>.json` にある。
+
+書けないのは**「何が見えるか」**。「下端の角が巻き込む」「振れの位相が変わる」は
+動画を見た人にしか書けない。下書きはそこを `### ここは人が書く` の空欄にして、
+機械が書いた部分と区別できるようにしてある。
 
 ## 制約
 

@@ -256,12 +256,15 @@ def awaiting(data: dict | None = None) -> list[dict]:
     return rows
 
 
-def decide(node: str, parm: str, status: str, note: str = "") -> dict:
-    """人の決定を検証リストに記録する。
+def decide(node: str, parm: str, status: str, note: str = "", by: str = "human") -> dict:
+    """決定を検証リストに記録する。
 
     **撮る値をここで凍らせる。** `propose_values.py` を回し直すと提案は
     変わりうるが、承認したのはそのとき見た5枚の絵。後で本撮りする値が
     黙って変わらないよう、決めた時点の値を `approved_values` に写す。
+
+    **誰が決めたかを残す（`decided_by`）。** 無人モードでは機械が承認するので、
+    後から人が見るときに「これは誰も絵を見ていない」と分かる必要がある。
     """
     if status not in ("approved", "rejected"):
         raise ValueError(f"status が不正です: {status}")
@@ -273,6 +276,7 @@ def decide(node: str, parm: str, status: str, note: str = "") -> dict:
 
     entry["status"] = status
     entry["decision_note"] = note
+    entry["decided_by"] = by
     entry["decided_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
     if status == "approved":
         proposal = entry.get("proposal") or {}
@@ -284,6 +288,29 @@ def decide(node: str, parm: str, status: str, note: str = "") -> dict:
         }
     save(data)
     return entry
+
+
+def auto_approve(data: dict | None = None) -> list[dict]:
+    """機械の判定だけで承認する。**無人モード専用。**
+
+    **通すのは verdict が「採用」のものだけ。**本撮りは1本あたり
+    5値 x 48フレームの sim なので、外れを撮る時間が惜しい。
+
+      採用（段階に無駄あり）  隣どうしがほぼ同じ段があり、枠を捨てている
+      破綻                    片端に破綻を入れるのは意図的な選び方で、人の判断
+      差なし                  そもそも人にも見せない（is_awaiting）
+
+    この2つは `screened` のまま残るので、帰宅後に `/review/` で静止画を見て
+    決めることになる。**機械が勝手に捨てはしない。**
+    """
+    targets = [e for e in awaiting(data) if e.get("verdict") == "採用"]
+    # decide() は1件ずつ読み書きするので、返ってきた側を使う（手元の dict は
+    # まだ screened のままで、status を見ると嘘になる）。
+    return [
+        decide(e["node"], e["parm"], "approved",
+               "無人モードが判定だけで承認した（絵は誰も見ていない）", by="auto")
+        for e in targets
+    ]
 
 
 def approved(data: dict | None = None) -> list[dict]:
@@ -313,6 +340,38 @@ def mark_shot(node: str, parm: str, out: str) -> dict:
     entry["shot_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
     save(data)
     return entry
+
+
+def mark_watched(node: str, parm: str, note: str = "") -> dict:
+    """撮れた動画を人が見て「使える」と決めたことを記録する。
+
+    **状態は `shot` のまま。**動画が使えることと記事になったことは別で、
+    公開は記事を書いて push して初めて成る（そこで `publish`）。ここで
+    増やすのは「もう見た」という印だけ。`/watch/` はこの印の無いものを並べる。
+    """
+    data = load()
+    entry = data.get("entries", {}).get(key_of(node, parm))
+    if entry is None:
+        raise KeyError(f"検証リストにありません: {key_of(node, parm)}")
+    if entry.get("status") != "shot":
+        raise SystemExit(
+            f"{key_of(node, parm)} は撮影済みではありません（status={entry.get('status')}）"
+        )
+
+    entry["watched_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    entry["watch_note"] = note
+    save(data)
+    return entry
+
+
+def unwatched(data: dict | None = None) -> list[dict]:
+    """撮れたが、まだ人が動画を見ていないもの。"""
+    rows = [
+        e for e in (data or load()).get("entries", {}).values()
+        if e.get("status") == "shot" and not e.get("watched_at")
+    ]
+    rows.sort(key=lambda e: (e.get("shot_at") or "", e.get("parm", "")))
+    return rows
 
 
 def retry(node: str, parm: str, note: str, overrides: dict | None = None) -> dict:
@@ -347,7 +406,16 @@ def retry(node: str, parm: str, note: str, overrides: dict | None = None) -> dic
 
     entry["status"] = "pending"
     entry.pop("decision_note", None)
+    entry.pop("decided_by", None)
     entry.pop("decided_at", None)
+    # 撮影済みから撮り直すときは「撮った」「見た」も畳む。**out は残す**
+    # （同じ動画 ID で撮り直すので、記事のリンクを付け替えずに済む）。
+    record["previous_shot"] = {
+        key: entry.pop(key) for key in ("shot_at", "watched_at", "watch_note")
+        if key in entry
+    } or None
+    if record["previous_shot"] is None:
+        del record["previous_shot"]
     save(data)
     return entry
 
@@ -506,6 +574,18 @@ def cmd_awaiting(args: argparse.Namespace) -> int:
 def cmd_decide(args: argparse.Namespace) -> int:
     """まとめて承認・却下する。"""
     status = args.decision
+    if getattr(args, "auto", False):
+        if status != "approved":
+            raise SystemExit("--auto は approve でだけ使えます")
+        rows = auto_approve()
+        for entry in rows:
+            print(f"  自動承認: {entry['node']} / {entry['parm']}")
+        held = [e["parm"] for e in awaiting()]
+        print(f"{len(rows)} 件を承認しました（機械の判定だけ）")
+        if held:
+            print(f"  人の判断に回したもの: {', '.join(held)}")
+        return 0
+
     if args.all:
         targets = [(e["node"], e["parm"]) for e in awaiting()]
         if not targets:
@@ -631,6 +711,11 @@ def main() -> int:
         p.add_argument("--node", help="同名が複数のノードにあるときだけ必要")
         p.add_argument("--all", action="store_true", help="承認待ちを全部")
         p.add_argument("--why", default="", help="決めた理由")
+        if name == "approve":
+            p.add_argument(
+                "--auto", action="store_true",
+                help="verdict が「採用」のものだけ機械が承認する（無人モード）",
+            )
         # dest は cmd と別にする。サブパーサ名（approve）と記録する状態
         # （approved）が違ううえ、argparse がどちらで上書きするかに
         # 頼りたくない。

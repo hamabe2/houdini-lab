@@ -52,6 +52,8 @@ class Page:
     tags: list[str] = field(default_factory=list)
     viewers: list[dict] = field(default_factory=list)
     html: str = ""
+    # 人がまだ絵を見ていない記事。**config.SHOW_DRAFTS のときしか出力しない。**
+    draft: bool = False
 
 
 def load_meta(media_id: str) -> dict:
@@ -91,7 +93,7 @@ def expand_compare(text: str, viewers: list[dict]) -> str:
     return COMPARE.sub(repl, text)
 
 
-def read_page(path: Path) -> Page:
+def read_page(path: Path, draft: bool = False) -> Page:
     raw = path.read_text(encoding="utf-8")
     m = FRONT_MATTER.match(raw)
     if not m:
@@ -126,6 +128,7 @@ def read_page(path: Path) -> Page:
         tags=list(fm.get("tags", []) or []),
         viewers=viewers,
         html=html,
+        draft=draft or bool(fm.get("draft")),
     )
 
 
@@ -186,6 +189,16 @@ def build() -> int:
     node_dir = config.CONTENT_DIR / "nodes"
     sources = sorted(node_dir.glob("*.md")) if node_dir.exists() else []
     pages = [read_page(p) for p in sources]
+
+    # **下書きは既定で捨てる。** 無人モードは人が絵を見ないまま記事を作るので、
+    # ここを通すと誰も見ていない記事が公開される。ローカルの serve.py だけが
+    # config.SHOW_DRAFTS を立てる（GitHub Actions は立てない）。
+    if config.DRAFT_DIR.exists():
+        pages += [read_page(p, draft=True) for p in sorted(config.DRAFT_DIR.glob("*.md"))]
+    dropped = [p for p in pages if p.draft and not config.SHOW_DRAFTS]
+    if dropped:
+        pages = [p for p in pages if p not in dropped]
+
     pages.sort(key=lambda p: p.title.lower())
 
     # ノードページ
@@ -228,7 +241,12 @@ def build() -> int:
     write(out / ".nojekyll", "")
 
     n_viewers = sum(len(p.viewers) for p in pages)
-    print(f"ビルド完了: {len(pages)} ページ / {n_viewers} ビューア / {len(tags)} タグ -> {out}")
+    n_draft = sum(1 for p in pages if p.draft)
+    note = f"（うち下書き {n_draft}）" if n_draft else ""
+    if dropped:
+        note = f"（下書き {len(dropped)} ページを除いた）"
+    print(f"ビルド完了: {len(pages)} ページ{note} / {n_viewers} ビューア / "
+          f"{len(tags)} タグ -> {out}")
     return 0
 
 

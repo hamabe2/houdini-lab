@@ -12,6 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 CONTENT_DIR = ROOT / "content"
+# 無人モードが書く記事の置き場。**ここは公開されない。**
+DRAFT_DIR = CONTENT_DIR / "drafts"
 TEMPLATE_DIR = ROOT / "templates"
 ASSET_DIR = ROOT / "assets"
 MEDIA_DIR = ROOT / "media"
@@ -28,6 +30,15 @@ SITE_LANG = "ja"
 # 検証に使う Houdini。記事側で上書きできるが、既定はこれ。
 # ページに必ず表示する（挙動はバージョンで変わるため）。
 HOUDINI_VERSION = "21.0.729"
+
+# 下書き（front matter の draft: true と content/drafts/ の中身）をビルドに
+# 含めるか。**既定は含めない。**
+#
+# 無人モードは人が絵を見ないまま記事を作るので、そのまま公開されると
+# 「誰も見ていない記事がサイトに出る」ことになる。ローカルの serve.py だけが
+# これを立て、GitHub Actions は立てない。つまり **push しても下書きは
+# 公開されない**（media/ の mp4 は別。下の注意を読むこと）。
+SHOW_DRAFTS = os.environ.get("HOUDINI_LAB_DRAFTS", "") == "1"
 
 # --- URL ------------------------------------------------------------------
 

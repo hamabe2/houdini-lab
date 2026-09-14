@@ -4579,7 +4579,7 @@
       "max": 1.0,
       "help": "Stiff constraints tend to vibrate or jitter unacceptably.   Damping reduces this by bleeding energy when evaluating the constraint.  Too much damping can prevent the constraint from being satisfied, however.   Values less than 1 should be used.",
       "notes": [],
-      "status": "screened",
+      "status": "shot",
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip",
       "proposal": {
         "values": [
@@ -4679,7 +4679,27 @@
         39.1
       ],
       "broken": {},
-      "screened_at": "2026-09-14 00:39:50"
+      "screened_at": "2026-09-14 00:39:50",
+      "decision_note": "",
+      "decided_at": "2026-09-14 21:11:19",
+      "approved_values": {
+        "values": [
+          0.0,
+          0.01,
+          0.1,
+          1.0
+        ],
+        "display_values": [
+          0.0,
+          0.01,
+          0.1,
+          1.0
+        ],
+        "default_index": 1,
+        "label": "Damping Ratio"
+      },
+      "out": "vellum-cloth-benddampingratio",
+      "shot_at": "2026-09-14 21:12:39"
     },
     "/obj/SUBJECT/CONSTRAINTS:benddampingscalemode": {
       "node": "/obj/SUBJECT/CONSTRAINTS",
@@ -5395,5 +5415,5 @@
       "hip": "D:\\work\\houdini-lab\\scenes\\vellum_cloth.hip"
     }
   },
-  "updated": "2026-09-14 00:50:51"
+  "updated": "2026-09-14 21:12:39"
 }
