@@ -422,6 +422,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         この画面は `serve.py` が動いているときにしか存在しない。
         """
         rows = review.awaiting()
+        # 承認の次の一手（本撮り）をこの画面から見えるようにする。**承認しても
+        # 何も起きないので、ここで行き先を書かないと承認済みが溜まっていることに
+        # 気づけない。**
+        ready = len(ledger.approved())
         if not rows:
             body = (
                 '<p class="empty">承認待ちはありません。<br>'
@@ -429,6 +433,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "--count 5 --camera /obj/CAM_angle</code><br>"
                 "を回すと、ここに溜まります。</p>"
             )
+            if ready:
+                body += (
+                    f'<p class="empty">承認済みが {ready} 件あります。本撮りする:<br>'
+                    "<code>python tools/shoot.py</code></p>"
+                )
         else:
             blocks = []
             for row in rows:
@@ -529,7 +538,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
   #status {{ color:#9aa0a6; font-size:.82rem; }}
 </style></head><body>
 <h1>承認</h1>
-<p class="hint">承認待ち {len(rows)} 件 &middot; <a href="{PREFIX}/setup/">セットアップ</a>
+<p class="hint">承認待ち {len(rows)} 件{f" &middot; 承認済み {ready} 件は <code>tools/shoot.py</code> で本撮り" if ready else ""}
+&middot; <a href="{PREFIX}/setup/">セットアップ</a>
 &middot; <a href="{PREFIX}/">サイト</a></p>
 {body}
 <div class="bar">

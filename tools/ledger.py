@@ -18,7 +18,13 @@
   screened  setup シートを撮って screen.py が判定した（採用 / 差なし / 破綻）
   approved  人が「本撮りしてよい」と決めた
   rejected  人が「撮らない」と決めた（理由つき）
-  published 本撮りして公開した
+  shot      本撮りが終わった。mp4 はあるが、まだ記事に載せていない
+  published 記事に載せて公開した
+
+**`shot` と `published` を分けること。** 撮り終えたものを approved のままに
+すると `review.py --approved` が「本撮りするならこれ」と同じものを出し続け、
+撮った本数が増えるほど何が残っているのか分からなくなる。撮影（機械）と公開
+（記事を書く人）は速さが違うので、その間に状態が要る。
 
 **人が下す決定は3つある。**「却下」と「やり直し」は違う:
 
@@ -68,6 +74,11 @@ LADDER_TYPES = ("Float", "Int")
 # グレーアウトほど確実な信号ではないため。
 OFF_TOPIC = ("Fluid", "Grain", "Hair", "Muscle", "Wind", "Plasticity", "Pressure")
 
+# 本撮りが済んでいる状態。**判定をやり直しても落とさない。**
+SHOT_STATES = ("shot", "published")
+
+STATUSES = ("pending", "screened", "approved", "rejected", "shot", "published", "無効")
+
 
 def key_of(node: str, parm: str) -> str:
     return f"{node}:{parm}"
@@ -91,7 +102,7 @@ def merge_screen(screen_path: Path) -> int:
     """screen.py の判定結果を検証リストに書き戻す。
 
     **上書きする。** 再測定したなら新しい結果が正しい。
-    ただし published の out は消さない（公開済みという事実は判定と別）。
+    ただし撮影・公開の事実は消さない（撮ったかどうかは判定と別の軸）。
     """
     if not screen_path.exists():
         return 0
@@ -104,12 +115,16 @@ def merge_screen(screen_path: Path) -> int:
     for result in record.get("results", []):
         key = key_of(result["node"], result["parm"])
         entry = entries.setdefault(key, {})
-        published_out = entry.get("out")
+        shot_out = entry.get("out")
+        # **撮影済み・公開済みは status を落とさない。** 判定をやり直しても
+        # 「もう撮ってある」という事実は変わらないので、screened に戻すと
+        # 本撮りの待ち行列に同じものがもう一度並ぶ。
+        kept = entry.get("status") if entry.get("status") in SHOT_STATES else None
 
         entry.update({
             "node": result["node"],
             "parm": result["parm"],
-            "status": "published" if published_out else "screened",
+            "status": kept or "screened",
             "verdict": result["verdict"],
             "reason": result["reason"],
             "values": result["values"],
@@ -122,8 +137,8 @@ def merge_screen(screen_path: Path) -> int:
             "same_db": record.get("same_db"),
             "screened_at": record.get("generated"),
         })
-        if published_out:
-            entry["out"] = published_out
+        if shot_out:
+            entry["out"] = shot_out
         n += 1
 
     save(data)
@@ -267,6 +282,35 @@ def decide(node: str, parm: str, status: str, note: str = "") -> dict:
             "default_index": proposal.get("default_index", 0),
             "label": entry.get("label") or parm,
         }
+    save(data)
+    return entry
+
+
+def approved(data: dict | None = None) -> list[dict]:
+    """本撮り待ち（承認済みでまだ撮っていない）を返す。"""
+    rows = [
+        e for e in (data or load()).get("entries", {}).values()
+        if e.get("status") == "approved"
+    ]
+    rows.sort(key=lambda e: (e.get("node", ""), e.get("parm", "")))
+    return rows
+
+
+def mark_shot(node: str, parm: str, out: str) -> dict:
+    """本撮りが終わったことを記録する。**公開したとは言っていない。**
+
+    ここを approved のままにすると `review.py --approved` が同じものを
+    「本撮りするならこれ」と出し続ける。撮影は機械が回すが、記事を書いて
+    公開するのは人なので、両者の間に状態が要る。
+    """
+    data = load()
+    entry = data.get("entries", {}).get(key_of(node, parm))
+    if entry is None:
+        raise KeyError(f"検証リストにありません: {key_of(node, parm)}")
+
+    entry["status"] = "shot"
+    entry["out"] = out
+    entry["shot_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
     save(data)
     return entry
 
@@ -533,14 +577,26 @@ def cmd_reopen(args: argparse.Namespace) -> int:
 def cmd_publish(args: argparse.Namespace) -> int:
     """公開したことを記録する。"""
     data = load()
-    key = key_of(args.node, args.parm)
+    node, parm = resolve(args.parm, args.node) if not args.node else (args.node, args.parm)
+    key = key_of(node, parm)
     entry = data.get("entries", {}).get(key)
     if entry is None:
         raise SystemExit(f"検証リストにありません: {key}")
+
+    # **--out は省略できる。** shoot.py が撮った時点で out を書いてあるので、
+    # 公開するときに動画 ID を人が打ち直す必要はない（打ち間違えると
+    # 検証リストと記事が食い違う）。
+    out = args.out or entry.get("out")
+    if not out:
+        raise SystemExit(
+            f"{key} には out がありません。--out で動画 ID を指定してください。"
+        )
+
     entry["status"] = "published"
-    entry["out"] = args.out
+    entry["out"] = out
+    entry["published_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
     save(data)
-    print(f"{key} を published にしました（{args.out}）")
+    print(f"{key} を published にしました（{out}）")
     return 0
 
 
@@ -555,10 +611,7 @@ def main() -> int:
     p_add.set_defaults(func=cmd_add)
 
     p_list = sub.add_parser("list", help="検証リストの中身を表示する")
-    p_list.add_argument(
-        "--status",
-        choices=("pending", "screened", "approved", "rejected", "published", "無効"),
-    )
+    p_list.add_argument("--status", choices=STATUSES)
     p_list.set_defaults(func=cmd_list)
 
     p_next = sub.add_parser("next", help="次に調べる候補を出す")
@@ -604,9 +657,9 @@ def main() -> int:
     p_reopen.set_defaults(func=cmd_reopen)
 
     p_pub = sub.add_parser("publish", help="公開したことを記録する")
-    p_pub.add_argument("--node", required=True)
+    p_pub.add_argument("--node", help="同名が複数のノードにあるときだけ必要")
     p_pub.add_argument("--parm", required=True)
-    p_pub.add_argument("--out", required=True)
+    p_pub.add_argument("--out", help="動画 ID（既定は撮影時に記録したもの）")
     p_pub.set_defaults(func=cmd_publish)
 
     args = ap.parse_args()

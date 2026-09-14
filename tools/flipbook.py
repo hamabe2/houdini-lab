@@ -386,6 +386,10 @@ def main() -> int:
         "--timeout", type=float, default=config.FLIPBOOK_TIMEOUT_MIN,
         help=f"GUI セッションの時間切れ（分、既定 {config.FLIPBOOK_TIMEOUT_MIN:.0f}）",
     )
+    ap.add_argument(
+        "--report", metavar="PATH",
+        help="どの out が撮れたかを JSON で書き出す（呼び出し側が結果を読むため）",
+    )
     args = ap.parse_args()
 
     hip = Path(args.hip).resolve()
@@ -462,13 +466,40 @@ def main() -> int:
     # 数十分かけて撮った他の PNG を捨てるのは惜しい。
     shot = {item["out"]: item for item in result["items"]}
     failed = []
+    done = []
     for sweep in sweeps:
         item = shot.get(sweep["out"])
         if item is None or item.get("error"):
             reason = "撮影されませんでした" if item is None else item["error"]
             failed.append((sweep["out"], reason))
             continue
-        encode_sweep(sweep, item, out_dir, width, height, args)
+        # **mp4 にするところで落ちても、他の本は出す。** 撮影と同じ理屈で、
+        # 1本の encode 失敗のために数十分かけて撮った PNG を捨てるのは惜しい。
+        try:
+            encode_sweep(sweep, item, out_dir, width, height, args)
+        except Exception as exc:
+            print(f"  {sweep['out']}: mp4 にできませんでした: {exc}")
+            failed.append((sweep["out"], f"{type(exc).__name__}: {exc}"))
+            continue
+        done.append(sweep["out"])
+
+    if args.report:
+        # **呼び出し側は stdout を読まずに済ませる。** shoot.py はこの結果を
+        # 見て検証リストを shot に進めるので、成否を取り違えると「撮ってある
+        # のに撮り直す」「撮れていないのに撮影済みになる」ことになる。
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(
+            json.dumps(
+                {
+                    "draft": bool(args.draft),
+                    "out_dir": str(out_dir),
+                    "ok": done,
+                    "failed": [{"out": o, "reason": r} for o, r in failed],
+                },
+                indent=2, ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
 
     if failed:
         print()

@@ -30,7 +30,9 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
   既定との差 37.5〜46.4 dB）。やり直し2回目まで済んでいて、`0 → 0.01` が
   46.4dB でほぼ同じ絵なのが残る難点（既定 0.01 を必ず含めるため避けられない）。
   `/review/` で承認か却下を決める
-- **未 push のコミットは無い。**作業ツリーもクリーン
+- **承認の次の口ができた。** `shoot.py` が承認済みを1回の Houdini 起動で
+  まとめて本撮りし、`approved → shot` まで進める。記事に載せたら
+  `ledger.py publish` で `published`
 
 **工程の自動化の度合い**
 
@@ -41,19 +43,15 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
 | 篩（`setup_sheet.py`）・判定（`screen.py`） | 自動 |
 | 上3つを N件まとめて回す（`screen_loop.py`） | 自動 |
 | 判定結果の承認（`/review/` ・ `ledger.py approve`） | **人間・まとめて1回** |
-| 本撮り（`flipbook.py`）| 手動起動 |
+| 承認済みをまとめて本撮り（`shoot.py`）| 自動 |
 | JSON / 記事 / push | **手作業** |
 
 **次にやること**
 
-1. **「撮影済み・未公開」の状態が検証リストに無い。** 本撮りを終えても `approved` の
-   ままで、`review.py --approved` が「本撮りするならこれ」と出し続ける。
-   本撮りが増えると必ず詰まる
-2. 承認済みをまとめて本撮りするドライバ（`flipbook.py --sweep` を承認済みの
-   ぶんだけ組み立てて1セッションで回す）
-3. JSON / 記事の生成。**ただし記事は実測を書く工程なので、機械化できるのは
+1. JSON / 記事の生成。**ただし記事は実測を書く工程なので、機械化できるのは
    数字の部分だけ**（`bendrestscale` では hython で二面角を測って初めて
-   「触っても無駄」と書けた）
+   「触っても無駄」と書けた）。`shoot.py` が `shot`（撮影済み・未公開）まで
+   進めるので、そこから先が残っている
 
 ## このプロジェクトの仕組み
 
@@ -123,7 +121,16 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 .venv\Scripts\python.exe tools\ledger.py retry --parm bendrestscale `
   --why "1e6 で破綻している" --cap 100000
 .venv\Scripts\python.exe tools\ledger.py reopen --parm bendrestscale   # 決定の取り消し
-.venv\Scripts\python.exe tools\review.py --approved   # 本撮りのコマンドを出す
+
+# 承認済みをまとめて本撮りする（1回の起動で全部。approved → shot）
+.venv\Scripts\python.exe tools\shoot.py
+#   --dry-run で「何を撮るか」だけ確認できる（Houdini を起動しない）
+#   動画 ID の既定は <シーン名>-<パラメータ名>。変えるなら:
+.venv\Scripts\python.exe tools\shoot.py --parm benddampingratio `
+  --out benddampingratio=vellum-cloth-benddamp
+.venv\Scripts\python.exe tools\review.py --approved   # 本撮り待ちの一覧
+.venv\Scripts\python.exe tools\review.py --shot       # 撮影済み・未公開（記事を書く番）
+.venv\Scripts\python.exe tools\ledger.py publish --parm benddampingratio  # 公開したら
 
 # 検証リスト（screening.json）。何を調べ、何を落とし、なぜかを残す
 .venv\Scripts\python.exe tools\ledger.py add --hip scenes\vellum_cloth.hip --node /obj/SUBJECT/SOLVER
@@ -512,18 +519,29 @@ setup_sheet.py      候補を1フレームずつ撮る
 screen.py           PSNR で判定 → screening.json に書き戻す
 screen_loop.py      上を N 件ぶん自動で回す（人が介在するのは本撮りの判断だけ）
 /review/            承認待ちを絵で並べて、まとめて承認・やり直し・却下する
-review.py           承認待ち / 承認済み（本撮りのコマンド付き）を端末で見る
-flipbook.py         承認されたものだけ本撮り
+review.py           承認待ち / 承認済み / 撮影済み・未公開を端末で見る
+shoot.py            承認されたものだけ本撮り（1回の起動でまとめて）→ shot
+ledger.py publish   記事に載せたことを記録する → published
 ```
 
 **判定（`verdict`）と決定（`status`）は別物。** verdict は機械が数値で出すもので
 「既定値と絵が変わるか」しか見ていない。撮る価値があるかは人が決める。
 
 ```
-                    ┌→ approved  → published    この段階で本撮りしてよい
-pending → screened ─┼→ pending（やり直し）       候補は生きている。提案が悪い
-                    └→ rejected                 候補自体に価値がない
+                    ┌→ approved → shot → published  撮ってよい → 撮った → 載せた
+pending → screened ─┼→ pending（やり直し）           候補は生きている。提案が悪い
+                    └→ rejected                     候補自体に価値がない
 ```
+
+**`shot`（撮影済み・未公開）を挟むこと。** 撮り終えたものを approved のままに
+すると `review.py --approved` が「本撮りするならこれ」と同じものを出し続け、
+本数が増えるほど何が残っているのか分からなくなる。撮影は機械が回すが記事は
+人が書くので、速さが違う工程の間には状態が要る。`shoot.py` が撮れた本だけ
+`shot` に進め、`ledger.py publish` が `published` に上げる。
+
+**判定をやり直しても `shot` / `published` は落とさない**（`ledger.SHOT_STATES`）。
+再測定したからといって撮った事実は消えないので、`screened` に戻すと本撮りの
+待ち行列に同じものがもう一度並ぶ。
 
 **「却下」と「やり直し」を分けること。** 一度ここを混ぜて実際に事故った:
 `/review/` の選択肢が承認と却下しかなく、却下に理由を書かせていたため、
@@ -555,8 +573,8 @@ pending → screened ─┼→ pending（やり直し）       候補は生き�
 - **承認した時点の値を `approved_values` に凍らせる。** `propose_values.py` を
   回し直すと提案は変わりうるが、承認したのはそのとき見た5枚の絵
 - **撮影中は承認しない。** 検証リストはファイル1本を丸ごと読み書きするので、
-  `screen_loop.py` が回っている最中に `/review/` で決めると、後から保存した
-  ほうが勝って片方が消える（ロックは入れていない）
+  `screen_loop.py` や `shoot.py` が回っている最中に `/review/` で決めると、
+  後から保存したほうが勝って片方が消える（ロックは入れていない）
 - **承認待ちの絵は `tools/_cache/review/` に退避する。** 判定に使った
   `tools/_cache/setup/` は次の run で丸ごと消える（`write_sheet()` が `rmtree`）。
   承認は撮影と同じ速さでは進まないので、置いたままだと
@@ -575,6 +593,23 @@ pending → screened ─┼→ pending（やり直し）       候補は生き�
   数値でないと伸ばせない。候補としては検証リストに残る（`ledger.LADDER_TYPES`）
 - **`--camera` を忘れないこと。** 既定は `config.DEFAULT_CAMERA`（`CAM_main`）。
   布は `CAM_angle` で撮る（理由は下の「カメラは題材の動く向きで選ぶ」）
+
+`shoot.py` の要点:
+
+- **画角は承認したときのものを使う**（`proposal.camera`）。`shoot.py` に
+  `--camera` は無い。判定した絵と違う画角で本撮りしては意味がないため。
+  シーンかカメラが違うものが混ざっていたら、その単位でセッションを分ける
+  （`flipbook.py` の job は hip とカメラを1つずつしか持たない）
+- **終了コードで成否を決めない。** `flipbook.py` は一部が失敗しても残りを
+  mp4 にして 1 を返すので、「1 なら全滅」と読むと撮れた本まで撮り直すことに
+  なる。`--report` が書く JSON の `ok` / `failed` を読む
+- **1セッション終わるごとに検証リストへ書き戻す。** 途中で止めても
+  「撮ったのに approved のまま」が残らないようにする
+- **動画 ID の既定は `<シーン名>-<パラメータ名>`**（`vellum-cloth-benddampingratio`）。
+  機械的に決まって衝突しないことを優先している。`--out <parm>=<id>` で
+  1件ずつ変えられるが、**ID は mp4 / JSON のファイル名であり、記事に書く
+  `:::compare <id>` の名前でもある**ので、後から変えると記事も直すことになる
+- **すでに media にある ID は黙って上書きしない**（`--overwrite` が要る）
 
 - **差なし** = 既定値との差が 50dB 以上（＝ほぼ同じ絵）。振る価値がない
 - **採用（段階に無駄あり）** = 隣どうしが 50dB 以上。その段階は枠を捨てている

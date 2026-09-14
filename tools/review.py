@@ -177,6 +177,9 @@ def flipbook_command(entry: dict) -> str:
 
     **承認したときの値と画角をそのまま使う。**`approved_values` に凍らせて
     あるので、あとで提案が変わっても撮るものは動かない。
+
+    **まとめて撮るなら `shoot.py`。** ここが出すのは1本ぶんを人が打ち込む
+    ための形で、`--out` は人が決める前提のプレースホルダのまま。
     """
     approved = entry.get("approved_values") or {}
     proposal = entry.get("proposal") or {}
@@ -197,22 +200,39 @@ def flipbook_command(entry: dict) -> str:
 def main() -> int:
     import argparse
 
-    ap = argparse.ArgumentParser(description="承認待ち・承認済みを一覧する")
+    ap = argparse.ArgumentParser(description="承認待ち・承認済み・撮影済みを一覧する")
     ap.add_argument("--approved", action="store_true",
-                    help="承認済みを出す（本撮りのコマンド付き）")
+                    help="承認済み（本撮り待ち）を出す")
+    ap.add_argument("--shot", action="store_true",
+                    help="撮影済み・未公開を出す（記事を書く番のもの）")
     args = ap.parse_args()
 
     if args.approved:
-        rows = [e for e in ledger.load().get("entries", {}).values()
-                if e.get("status") == "approved"]
+        rows = ledger.approved()
         if not rows:
             print("承認済みはありません。（/review/ か ledger.py approve で決めてください）")
             return 0
-        print(f"承認済み {len(rows)} 件。本撮りするならこれ:")
+        print(f"承認済み {len(rows)} 件。まとめて撮るならこれ1本:")
+        print("  .venv\\Scripts\\python.exe tools\\shoot.py")
+        print("\n1本ずつ撮るなら:")
         for entry in sorted(rows, key=lambda e: e["parm"]):
             print(f"\n[{entry['parm']}] {entry.get('decision_note', '')}")
             print(flipbook_command(entry))
-        print("\n  撮り終えたら: ledger.py publish --node <node> --parm <parm> --out <id>")
+        return 0
+
+    if args.shot:
+        rows = [e for e in ledger.load().get("entries", {}).values()
+                if e.get("status") == "shot"]
+        if not rows:
+            print("撮影済み・未公開はありません。（`shoot.py` で本撮りすると溜まります）")
+            return 0
+        print(f"撮影済み・未公開 {len(rows)} 件。記事を書く番:")
+        for entry in sorted(rows, key=lambda e: e["parm"]):
+            out = entry.get("out", "")
+            print(f"\n  {entry['parm']}  （{entry.get('label', '')}）  撮影 {entry.get('shot_at', '?')}")
+            print(f"      {config.MEDIA_DIR / (out + '.mp4')}")
+            print(f"      記事に書く : :::compare {out}")
+            print(f"      公開したら : ledger.py publish --parm {entry['parm']}")
         return 0
 
     rows = awaiting()
