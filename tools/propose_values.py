@@ -85,7 +85,7 @@ def round_sig(value: float, digits: int = 3) -> float:
 
 
 def load_meta(node: str, parm: str, args: argparse.Namespace) -> dict:
-    """パラメータの型・既定値・範囲を台帳から引く。
+    """パラメータの型・既定値・範囲を検証リストから引く。
 
     **Houdini を起動せずに済ませる。** 梯子は撮る前に決まっていないと
     いけないが、そのためだけにもう1回 hip を読むのは高い。`ledger.py add`
@@ -107,7 +107,7 @@ def load_meta(node: str, parm: str, args: argparse.Namespace) -> dict:
 
     if meta["default"] is None:
         raise SystemExit(
-            f"台帳に {node}:{parm} がありません。\n"
+            f"検証リストに {node}:{parm} がありません。\n"
             f"  先に  ledger.py add --hip <hip> --node {node}  を実行するか、\n"
             "  --default で既定値を直接渡してください。"
         )
@@ -510,7 +510,7 @@ def print_report(result: dict, hip: Path) -> None:
 
 
 def record_proposal(result: dict) -> None:
-    """提案を台帳に残す。**次に同じ梯子を撮り直さないため。**"""
+    """提案を検証リストに残す。**次に同じ梯子を撮り直さないため。**"""
     data = ledger.load()
     entry = data.setdefault("entries", {}).setdefault(
         ledger.key_of(result["node"], result["parm"]),
@@ -569,8 +569,8 @@ def main() -> int:
     )
     ap.add_argument("--same-db", type=float, default=SAME_DB,
                     help=f"この dB 以上離れていなければ同じ絵とみなす（既定 {SAME_DB}）")
-    ap.add_argument("--default", type=float, help="既定値を台帳から引かずに指定する")
-    ap.add_argument("--min", type=float, help="下限を台帳から引かずに指定する")
+    ap.add_argument("--default", type=float, help="既定値を検証リストから引かずに指定する")
+    ap.add_argument("--min", type=float, help="下限を検証リストから引かずに指定する")
     ap.add_argument("--camera", default=f"/obj/{config.DEFAULT_CAMERA}")
     ap.add_argument("--width", type=int, default=config.VIDEO_WIDTH)
     ap.add_argument("--height", type=int, default=config.VIDEO_HEIGHT)
@@ -595,7 +595,7 @@ def main() -> int:
 
     if not args.no_ledger:
         record_proposal(result)
-        print(f"  台帳に提案を残しました: {ledger.LEDGER}")
+        print(f"  検証リストに提案を残しました: {ledger.LEDGER}")
 
     return 0
 

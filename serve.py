@@ -596,7 +596,7 @@ document.getElementById("send").addEventListener("click", async (ev) => {{
             decisions = payload.get("decisions") or []
 
             # **全部検証してから、まとめて書く。** 途中で弾くと半分だけ
-            # 適用された台帳が残り、画面の表示と食い違う。
+            # 適用された検証リストが残り、画面の表示と食い違う。
             prepared = []
             for item in decisions:
                 node, _, parm = str(item["key"]).rpartition(":")

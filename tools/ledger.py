@@ -1,10 +1,10 @@
-"""検証の台帳。**何を調べ、何を落とし、なぜかを1か所に残す。**
+"""検証リスト。**何を調べ、何を落とし、なぜかを1か所に残す。**
 
   python tools/ledger.py add --hip scenes/vellum_cloth.hip --node /obj/SUBJECT/SOLVER
   python tools/ledger.py list
   python tools/ledger.py next
 
-台帳は `screening.json`（リポジトリ直下、コミットする）。
+検証リストは `screening.json`（リポジトリ直下、コミットする）。
 
 ## なぜ要るか
 
@@ -88,7 +88,7 @@ def save(data: dict) -> None:
 
 
 def merge_screen(screen_path: Path) -> int:
-    """screen.py の判定結果を台帳に書き戻す。
+    """screen.py の判定結果を検証リストに書き戻す。
 
     **上書きする。** 再測定したなら新しい結果が正しい。
     ただし published の out は消さない（公開済みという事実は判定と別）。
@@ -242,7 +242,7 @@ def awaiting(data: dict | None = None) -> list[dict]:
 
 
 def decide(node: str, parm: str, status: str, note: str = "") -> dict:
-    """人の決定を台帳に記録する。
+    """人の決定を検証リストに記録する。
 
     **撮る値をここで凍らせる。** `propose_values.py` を回し直すと提案は
     変わりうるが、承認したのはそのとき見た5枚の絵。後で本撮りする値が
@@ -254,7 +254,7 @@ def decide(node: str, parm: str, status: str, note: str = "") -> dict:
     data = load()
     entry = data.get("entries", {}).get(key_of(node, parm))
     if entry is None:
-        raise KeyError(f"台帳にありません: {key_of(node, parm)}")
+        raise KeyError(f"検証リストにありません: {key_of(node, parm)}")
 
     entry["status"] = status
     entry["decision_note"] = note
@@ -278,13 +278,13 @@ def retry(node: str, parm: str, note: str, overrides: dict | None = None) -> dic
     範囲が悪い」という指摘なので、`pending` に戻して撮り直させる。
 
     **前の判定は retry.previous に畳んで、上の階層からは消す。**status が
-    pending なのに verdict が「採用」のまま残っていると、台帳を読んだとき
+    pending なのに verdict が「採用」のまま残っていると、検証リストを読んだとき
     どちらが今の事実なのか分からなくなる。
     """
     data = load()
     entry = data.get("entries", {}).get(key_of(node, parm))
     if entry is None:
-        raise KeyError(f"台帳にありません: {key_of(node, parm)}")
+        raise KeyError(f"検証リストにありません: {key_of(node, parm)}")
 
     record = entry.setdefault("retry", {})
     previous = {
@@ -317,7 +317,7 @@ def reopen(node: str, parm: str) -> dict:
     data = load()
     entry = data.get("entries", {}).get(key_of(node, parm))
     if entry is None:
-        raise KeyError(f"台帳にありません: {key_of(node, parm)}")
+        raise KeyError(f"検証リストにありません: {key_of(node, parm)}")
     if entry.get("status") not in ("rejected", "approved"):
         raise SystemExit(
             f"{key_of(node, parm)} は決定済みではありません"
@@ -340,7 +340,7 @@ def resolve(parm: str, node: str | None = None) -> tuple[str, str]:
         if e.get("parm") == parm and (node is None or e.get("node") == node)
     ]
     if not hits:
-        raise SystemExit(f"台帳にありません: {parm}" + (f"（{node}）" if node else ""))
+        raise SystemExit(f"検証リストにありません: {parm}" + (f"（{node}）" if node else ""))
     if len(hits) > 1:
         nodes = ", ".join(sorted(e["node"] for e in hits))
         raise SystemExit(f"{parm} は複数のノードにあります。--node で指定してください: {nodes}")
@@ -368,7 +368,7 @@ def cmd_list(args: argparse.Namespace) -> int:
     data = load()
     entries = data.get("entries", {})
     if not entries:
-        print("台帳は空です。`ledger.py add` で候補を積んでください。")
+        print("検証リストは空です。`ledger.py add` で候補を積んでください。")
         return 0
 
     rows = [e for e in entries.values() if not args.status or e.get("status") == args.status]
@@ -378,7 +378,7 @@ def cmd_list(args: argparse.Namespace) -> int:
     for entry in entries.values():
         by_status[entry.get("status", "?")] = by_status.get(entry.get("status", "?"), 0) + 1
 
-    print(f"台帳: {LEDGER}  （更新 {data.get('updated', '?')}）")
+    print(f"検証リスト: {LEDGER}  （更新 {data.get('updated', '?')}）")
     print("  " + " / ".join(f"{k} {v}" for k, v in sorted(by_status.items())))
     print()
 
@@ -419,7 +419,7 @@ def cmd_next(args: argparse.Namespace) -> int:
     print("  .venv\\Scripts\\python.exe tools\\setup_sheet.py --hip <hip> \\")
     for probe in probes:
         print(f"    {probe} \\")
-    print("  そのあと tools\\screen.py で判定 → 台帳に自動で書き戻ります。")
+    print("  そのあと tools\\screen.py で判定 → 検証リストに自動で書き戻ります。")
     return 0
 
 
@@ -474,7 +474,7 @@ def cmd_decide(args: argparse.Namespace) -> int:
         targets = [resolve(name, args.node) for name in names]
 
     # **却下には理由を要る。**「なぜ落としたか」が残っていないと、次に
-    # 同じ候補を見たときに判断をやり直すことになる（台帳の存在理由そのもの）。
+    # 同じ候補を見たときに判断をやり直すことになる（検証リストの存在理由そのもの）。
     if status == "rejected" and not args.why:
         raise SystemExit("却下には --why で理由を書いてください")
 
@@ -536,7 +536,7 @@ def cmd_publish(args: argparse.Namespace) -> int:
     key = key_of(args.node, args.parm)
     entry = data.get("entries", {}).get(key)
     if entry is None:
-        raise SystemExit(f"台帳にありません: {key}")
+        raise SystemExit(f"検証リストにありません: {key}")
     entry["status"] = "published"
     entry["out"] = args.out
     save(data)
@@ -545,7 +545,7 @@ def cmd_publish(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="検証の台帳")
+    ap = argparse.ArgumentParser(description="検証リスト")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p_add = sub.add_parser("add", help="ノードのパラメータを候補として積む")
@@ -554,7 +554,7 @@ def main() -> int:
     p_add.add_argument("--filter", help="内部名・ラベル・説明への絞り込み（正規表現）")
     p_add.set_defaults(func=cmd_add)
 
-    p_list = sub.add_parser("list", help="台帳の中身を表示する")
+    p_list = sub.add_parser("list", help="検証リストの中身を表示する")
     p_list.add_argument(
         "--status",
         choices=("pending", "screened", "approved", "rejected", "published", "無効"),

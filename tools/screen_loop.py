@@ -2,7 +2,7 @@
 
   python tools/screen_loop.py --hip scenes/vellum_cloth.hip --count 3
 
-台帳から未評価の候補を順に取り、値の刻みを決め、判定して台帳に書き戻す。
+検証リストから未評価の候補を順に取り、値の刻みを決め、判定して検証リストに書き戻す。
 人が介在するのは最後の「採用されたものを本撮りするか」だけになる。
 
 ## なぜ要るか
@@ -14,10 +14,10 @@
 
 ## 1件あたりの流れ
 
-  1. 台帳から次の候補を取る（Float / Int のみ。後述）
+  1. 検証リストから次の候補を取る（Float / Int のみ。後述）
   2. `propose_values.propose()` で端を探し、段階を決める
   3. 決まった段階の絵を setup シートに積む
-  4. `screen.py` の判定にかけ、台帳へ書き戻す
+  4. `screen.py` の判定にかけ、検証リストへ書き戻す
 
 **3 で撮り直さない。** 段階は梯子の段から選ばれるので、提案した値の絵は
 2 で既に撮れている。ここで `setup_sheet.py` を別に起動すると、同じ値の sim を
@@ -26,7 +26,7 @@
 ## この loop が扱わないもの
 
 - **Toggle / メニュー。** 梯子は既定値に 10^k を掛けて作るので、数値でないと
-  伸ばせない。候補としては台帳に残す（0/1 を並べる価値はある）が、ここでは
+  伸ばせない。候補としては検証リストに残す（0/1 を並べる価値はある）が、ここでは
   飛ばす。`ledger.LADDER_TYPES` がその線引き。
 - **撮る価値があるかの判断。** 判定（verdict）は「絵が変わるか」しか見ていない。
   採用されたものは `screened` のまま承認待ちに積み、`/review/` か
@@ -74,7 +74,7 @@ def main() -> int:
     ap.add_argument("--count", type=int, default=3, help="回す件数（既定 3）")
     ap.add_argument(
         "--node", action="append",
-        help="このノードの候補だけを回す（複数指定可。既定は台帳の全ノード）",
+        help="このノードの候補だけを回す（複数指定可。既定は検証リストの全ノード）",
     )
     ap.add_argument(
         "--max-errors", type=int, default=MAX_ERRORS,
@@ -103,7 +103,7 @@ def main() -> int:
     args = ap.parse_args()
 
     # propose_values.load_meta() が見る上書き。ループでは候補ごとに違うので
-    # 使わない（台帳の値をそのまま信じる）。
+    # 使わない（検証リストの値をそのまま信じる）。
     args.default = None
     args.min = None
 
@@ -221,7 +221,7 @@ def main() -> int:
     for entry, message in failed:
         print(f"  [失敗          ] {entry['parm']}  {message.splitlines()[0]}")
 
-    print(f"\n  台帳: {ledger.LEDGER}")
+    print(f"\n  検証リスト: {ledger.LEDGER}")
 
     # **本撮りのコマンドはここでは出さない。** 撮る価値があるかは人が決める
     # 工程で、その入力口は /review/（と ledger.py approve）。

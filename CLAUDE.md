@@ -46,7 +46,7 @@ Houdini のパラメータを段階的に振り、スライダーで切り替え
 
 **次にやること**
 
-1. **「撮影済み・未公開」の状態が台帳に無い。** 本撮りを終えても `approved` の
+1. **「撮影済み・未公開」の状態が検証リストに無い。** 本撮りを終えても `approved` の
    ままで、`review.py --approved` が「本撮りするならこれ」と出し続ける。
    本撮りが増えると必ず詰まる
 2. 承認済みをまとめて本撮りするドライバ（`flipbook.py --sweep` を承認済みの
@@ -125,7 +125,7 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 .venv\Scripts\python.exe tools\ledger.py reopen --parm bendrestscale   # 決定の取り消し
 .venv\Scripts\python.exe tools\review.py --approved   # 本撮りのコマンドを出す
 
-# 検証の台帳（screening.json）。何を調べ、何を落とし、なぜかを残す
+# 検証リスト（screening.json）。何を調べ、何を落とし、なぜかを残す
 .venv\Scripts\python.exe tools\ledger.py add --hip scenes\vellum_cloth.hip --node /obj/SUBJECT/SOLVER
 .venv\Scripts\python.exe tools\ledger.py next --count 3   # 次に調べる候補
 .venv\Scripts\python.exe tools\ledger.py list --status screened
@@ -507,7 +507,7 @@ vellumconstraints では `stretchstiffness` / `compressstiffness` / `tangentstif
 ```
 ledger.py add       ノードの全パラメータを候補として積む（既に判定済みのものは触らない）
 ledger.py next      次に調べる候補を出す
-propose_values.py   端を探して振る値の刻みを決める → 台帳に proposal を残す
+propose_values.py   端を探して振る値の刻みを決める → 検証リストに proposal を残す
 setup_sheet.py      候補を1フレームずつ撮る
 screen.py           PSNR で判定 → screening.json に書き戻す
 screen_loop.py      上を N 件ぶん自動で回す（人が介在するのは本撮りの判断だけ）
@@ -554,7 +554,7 @@ pending → screened ─┼→ pending（やり直し）       候補は生き�
   verdict が「採用」のまま残っていると、どちらが今の事実か分からなくなる
 - **承認した時点の値を `approved_values` に凍らせる。** `propose_values.py` を
   回し直すと提案は変わりうるが、承認したのはそのとき見た5枚の絵
-- **撮影中は承認しない。** 台帳はファイル1本を丸ごと読み書きするので、
+- **撮影中は承認しない。** 検証リストはファイル1本を丸ごと読み書きするので、
   `screen_loop.py` が回っている最中に `/review/` で決めると、後から保存した
   ほうが勝って片方が消える（ロックは入れていない）
 - **承認待ちの絵は `tools/_cache/review/` に退避する。** 判定に使った
@@ -567,12 +567,12 @@ pending → screened ─┼→ pending（やり直し）       候補は生き�
 - **提案した段階の絵は撮り直さない。** 段階は `propose_values.py` が撮った梯子の
   段から選ばれるので、その時点でもう撮れている。ここで `setup_sheet.py` を
   別に起動すると同じ sim をもう一周回すことになる（1件あたり5値ぶん）
-- **1件終わるごとに台帳へ書き戻す。** 途中で止めてもそこまでの判定は残る
+- **1件終わるごとに検証リストへ書き戻す。** 途中で止めてもそこまでの判定は残る
 - **1件が失敗しても次へ進む。** 失敗は `error_count` / `last_error` として
-  台帳に残り、`status` は pending のまま（時間切れやダイアログは候補そのものの
+  検証リストに残り、`status` は pending のまま（時間切れやダイアログは候補そのものの
   性質ではないので、一度で永久に捨てない）。既定では2回失敗した候補を飛ばす
 - **Toggle とメニューは回さない。** 梯子は既定値に 10^k を掛けて作るので
-  数値でないと伸ばせない。候補としては台帳に残る（`ledger.LADDER_TYPES`）
+  数値でないと伸ばせない。候補としては検証リストに残る（`ledger.LADDER_TYPES`）
 - **`--camera` を忘れないこと。** 既定は `config.DEFAULT_CAMERA`（`CAM_main`）。
   布は `CAM_angle` で撮る（理由は下の「カメラは題材の動く向きで選ぶ」）
 

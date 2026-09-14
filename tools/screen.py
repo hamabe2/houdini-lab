@@ -181,8 +181,8 @@ def print_group(result: dict, cells: list[dict]) -> None:
 def screen_sheet(sheet_dir: Path, same_db: float = SAME_DB, verbose: bool = True) -> dict:
     """シート1枚ぶんを判定して `screen.json` に書く。
 
-    **台帳への書き戻しはここではやらない。** 呼び出し側が
-    `ledger.merge_screen()` を呼ぶ（測るだけのときに台帳を汚さないため）。
+    **検証リストへの書き戻しはここではやらない。** 呼び出し側が
+    `ledger.merge_screen()` を呼ぶ（測るだけのときに検証リストを汚さないため）。
     """
     meta_path = sheet_dir / "sheet.json"
     if not meta_path.exists():
@@ -243,12 +243,12 @@ def main() -> int:
     print(f"採用候補 {len(adopted)}/{len(results)}: {', '.join(adopted) or 'なし'}")
     print(f"記録: {out}")
 
-    # 判定は台帳にも書き戻す。**同じ調査を繰り返さないため**で、
+    # 判定は検証リストにも書き戻す。**同じ調査を繰り返さないため**で、
     # screen.json は最新の1回ぶんしか持たない（上書きされる）。
     if not args.no_ledger:
         import ledger
         n = ledger.merge_screen(out)
-        print(f"台帳を更新しました: {ledger.LEDGER}（{n} 件）")
+        print(f"検証リストを更新しました: {ledger.LEDGER}（{n} 件）")
     return 0
 
 

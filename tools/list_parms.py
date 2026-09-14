@@ -304,7 +304,7 @@ def main() -> int:
     })
 
     # **説明の統合は表示より前にやる。** ここを print_node の中でやっていたら
-    # --json の出力にだけ説明が入らず、台帳が空の help を抱えることになった。
+    # --json の出力にだけ説明が入らず、検証リストが空の help を抱えることになった。
     for node in result.get("nodes", []):
         docs = load_docs(node.get("help_key", ""))
         for parm in node.get("parms", []):

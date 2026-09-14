@@ -63,7 +63,7 @@ def keep(cells: list[dict], node: str, parm: str) -> list[str]:
 
 
 def images_for(entry: dict) -> list[dict]:
-    """台帳の1件に対応する絵を、値の順に並べて返す（無ければ空）。"""
+    """検証リストの1件に対応する絵を、値の順に並べて返す（無ければ空）。"""
     out = []
     for i, value in enumerate(entry.get("values") or []):
         name = image_name(entry["node"], entry["parm"], value)
@@ -143,7 +143,7 @@ def prune() -> int:
 
     **approved と published は残す。** 本撮りの前に見返すことがあるし、
     撮り直さない限り二度と手に入らない絵でもある。消すのは rejected と、
-    台帳から消えたものだけ。
+    検証リストから消えたものだけ。
     """
     if not REVIEW_DIR.is_dir():
         return 0
