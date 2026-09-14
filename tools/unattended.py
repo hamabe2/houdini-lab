@@ -58,6 +58,21 @@ except AttributeError:                                   # 3.6 以前
     pass
 
 
+def serve_is_running() -> bool:
+    """`serve.py` が上がっているか。
+
+    **止めずに回すと `media/` の書き込みが弾かれることがある。**開発サーバーは
+    `media/` を監視して再ビルドするので、その最中にファイルを掴む
+    （`encode.write_meta` はリトライするので致命的ではないが、無人で回すなら
+    避けたい）。止まっているかを人の記憶に頼らず、ここで見る。
+    """
+    import socket
+
+    with socket.socket() as sock:
+        sock.settimeout(0.3)
+        return sock.connect_ex(("127.0.0.1", 8765)) == 0
+
+
 def last_camera() -> str | None:
     """このシーンで実際に使ってきたカメラ。**既定に頼らない。**
 
@@ -185,6 +200,13 @@ def main() -> int:
               "新しい候補を始めません")
     if args.dry_run:
         print("  --dry-run: Houdini は起動しません")
+
+    # **止まらずに警告だけ出す。** 無人で回すものが人の応答を待って止まっては
+    # 本末転倒だし、書き込みはリトライで通ることが多い。
+    if not args.dry_run and serve_is_running():
+        print("\n  ! serve.py が動いています（127.0.0.1:8765）。")
+        print("    media/ を掴んで JSON の書き込みが弾かれることがあります。")
+        print("    止めてから回すほうが確実です（このまま続けます）。")
 
     # --- 1. 篩にかける -------------------------------------------------------
     loop = [

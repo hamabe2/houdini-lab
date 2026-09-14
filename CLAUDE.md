@@ -140,7 +140,8 @@ PowerShell から実行する。**Git Bash は `/obj/...` を Windows パスに�
 .venv\Scripts\python.exe tools\ledger.py publish --parm benddampingratio  # 公開したら
 
 # 無人モード（外出中に篩 → 自動承認 → 本撮り → 記事の下書きまで通す）
-# **Claude Code ではなく普通の PowerShell から叩く。**トークンを使わない
+# **unattended.bat をダブルクリックするのが本線。**メニューから dry-run / 本番を選ぶ
+# 以下は同じことを手で打つ場合。Claude Code ではなく普通の PowerShell から
 .venv\Scripts\python.exe tools\unattended.py --hip scenes\vellum_cloth.hip `
   --count 6 --hours 4 --log
 #   --dry-run で「何を回すか」だけ確認できる
@@ -768,6 +769,20 @@ draft.py        撮影済みから記事の下書きを作る（公開はされ�
   次第で日本語が化ける。帰ってきて読めないログほど困るものはない。
   子プロセス（`screen_loop` / `shoot`）の出力も 1 行ずつ読んで同じファイルに
   入れている（まとめて受け取ると、数十分ターミナルが無音になる）
+
+### 起動は `unattended.bat` のダブルクリック
+
+エクスプローラでリポジトリを開いて `unattended.bat` を叩くと、メニューが出て
+dry-run か本番かを選べる。シーン・件数・時間はバッチ先頭の `set` で変える。
+
+- **バッチは ASCII だけで書く。** `.bat` はコンソールのコードページ（日本語
+  Windows では cp932）で読まれるので、UTF-8 で保存した日本語は化ける。
+  日本語のメッセージは全部 Python 側に出させている
+- **改行は CRLF。** cmd.exe は LF だけだと `goto` やラベルの解釈に失敗する
+  ことがあり、しかも黙って別の行へ飛ぶ。`.gitattributes` で固定してある
+- **`serve.py` が動いていたら警告する**（`unattended.py` が 127.0.0.1:8765 を
+  見る）。ただし**止まらない**。無人で回すものが人の応答を待っては本末転倒だし、
+  `media/` への書き込みはリトライで通ることが多い
 
 ### 起動は Claude Code からではなく PowerShell から
 
